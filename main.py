@@ -28,7 +28,7 @@ print(col_head)
 
 #Edit column header to code
 for col in df_en.columns:
-    if col[0] == "Q":
+    if col.startswith('Q'):
         df_en.rename({col:str(col[0:3])},axis=1,inplace = True)
 df_en.columns
 
@@ -55,7 +55,7 @@ print(df_en['r_id'])
 
 #Simplify Question Response
 for col in df_en.columns:
-    if col[0] == 'Q':
+    if col.startswith('Q'):
         for q in df_en[col]:
             if df_en.q.notnull().values.any():
                 print(df_en[q])
