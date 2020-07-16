@@ -23,43 +23,40 @@ def gsheet2excel(x):
     print(excel_url)
     return excel_url
 x = gsheet2excel(form_url)
-
 df = pd.read_excel(x)
-
+'''
 #Translate column head
 df_en = df.copy()
 df_en
 df_en.rename(columns=lambda x: translator.translate(x).text, inplace=True)
 col_head = df_en.columns
-
 print(col_head)
+'''
 
+df_en = df
 # Edit column header to code
 for col in df_en.columns:
     if col.startswith('Q'):
         df_en.rename({col: str(col[0:3])}, axis=1, inplace=True)
 df_en.columns
 
-print(df.columns)
-
 # Edit main column header
 df_en.rename({
     "Timestamp": "timestamp",
-    "Name of surveyed station": "stn_name_th",
-    "Name of data recorder": "agent_name",
-    "Choose a facility": "r_id",
-    "Name the facility.": "acc_name",
-    "Specify the location of the facility.": "acc_loc",
-    "Upload a review of facility images (maximum 10 images).": "acc_img",
-    "Additional reviews of this facility": "acc_comment"
+    "ชื่อสถานีที่สำรวจ": "stn_name_th",
+    "ชื่อผู้บันทึกข้อมูล": "agent_name",
+    "เลือกสิ่งอำนวยความสะดวก": "r_id",
+    "ตั้งชื่อสิ่งอำนวยความสะดวก": "acc_name",
+    "ระบุตำแหน่งของสิ่งอำนวยความสะดวก": "acc_loc",
+    "อัพโหลดรูปภาพสิ่งอำนวยความสะดวกที่ตรวจสอบ (ไม่เกิน 10 รูป)": "acc_img",
+    "ความคิดเห็นเพิ่มเติมถึงสิ่งอำนวยความสะดวกนี้": "acc_comment"
 }, axis=1, inplace=True)
 
 print(df_en.columns)
 df_en.info()
 df_stn.info()
 
-# Match Station ID
-#df_en = pd.merge(df_en,df_stn[['s_id','stn_id']], on=['stn_name_th'])
+
 
 # Generate unique_response_id
 # df_en['res_id'] = df_en['r_id'] + "-" +
@@ -70,10 +67,5 @@ df_en['r_id'] = df_en['r_id'].str.slice_replace(3, repl='')
 print(df_en['r_id'])
 df_en
 
-# Simplify Question Response
-r_ans = []
-for col in df_en.columns:
-    df_en.loc[df_en.col.isnull(), col] = 0
-
-
-df_en
+# Match Station ID
+df_en = pd.merge(df_en,df_stn[['s_id','stn_id']], on=['stn_name_th'])
