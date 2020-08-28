@@ -4,7 +4,7 @@ import numpy as np
 df = pd.DataFrame([[np.nan,'P3:pass','D1:xxxxx','M2:yyyy','R01'],
                    ['P1:OK','M1:failed','D2:zzzzz','M2:aaaaaa','R02'],
                    ['D2:Denied','M1:bbbbb',np.nan,np.nan,'R03']],
-                  columns=['Q01','Q02','Q03','Q04','r_id'])
+                  columns=['R01Q01','R01Q02','R01Q03','R01Q04','r_id'])
 
 print(df)
 
@@ -13,12 +13,12 @@ z = []
 
 def combine_response(df):
     for row in range(len(df)):
-    for col in df.columns:
-        if col.startswith('Q'):
-            if pd.notna(df.loc[row].at[col]):
-                x = (str(df.loc[row].at[col]))
-                y = str(col) + (x[0:2])
-                df.loc[row].at[col] = y
+        for col in df.columns:
+            if col.startswith('R'):
+                if pd.notna(df.loc[row].at[col]):
+                    x = (str(df.loc[row].at[col]))
+                    y = str(col) + (x[0:2])
+                    df.loc[row].at[col] = y
     df['output'] = [y[pd.notna(y)].tolist() for y in df.values]
     return df
 
