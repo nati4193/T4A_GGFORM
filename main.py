@@ -4,26 +4,29 @@ import pandas as pd
 import numpy as np
 print("Pandas version", pd.__version__)
 
-# Import database
-df_stn = pd.read_csv(
-    r'C:\Users\nngna\OneDrive\Documents\MAYDAY_NATI\T4A_GGFORM\db\m_station_db.csv')
-df_stn = df_stn.rename(columns={"name_th": "stn_name_th"})
-df_stn.info()
-df_stn
+# Import station database
+def getstation():
+    df_stn = pd.read_csv(
+        r'C:\Users\nngna\OneDrive\Documents\MAYDAY_NATI\T4A_GGFORM\db\m_station_db.csv')
+    df_stn = df_stn.rename(columns={"name_th": "stn_name_th"})
+    df_stn.info()
+    return df_stn
 
-# Import file
+df1 = getstation()
+
+# Import response data
 form_url = 'https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997'
-def gsheet2excel(x):
+
+def getresponse(url):
     e = 'export?format=xlsx&'
-    excel_url =  x.replace('edit',e)
-    print(excel_url)
-    return excel_url
-x = gsheet2excel(form_url)
-df = pd.read_excel(x)
+    excel_url =  url.replace('edit',e)
+    df = pd.read_excel(excel_url,encoding= 'unicode_escape')
+    return df
+
+df2 = getresponse(form_url)
 
 #add index column
-df['rec_id'] = df.index
-
+df['rec_id'] = df.index.astype(int).int(5)
 df_en = df
 
 # Edit column header to code
