@@ -107,18 +107,20 @@ def batchresponse(df,start,end):
 
     for row in range(i,j):
         one_item = getdictresponse(df,row)
-        s = str(row)
-        acc_item[s] = one_item
+        #s = str(row)
+        acc_item[one_item['ID']] = one_item
 
     return acc_item
 
+#### TEST FUNCTION
 a = getdictresponse(df3,1)
 a = batchresponse(df3,0,9)
 
-acc_json = json.dumps(a,indent=4,ensure_ascii=False) ### Missing Null value format
-
+## EXPORT JSON
+acc_json = json.dumps(a,indent=4,ensure_ascii=False)
 print(acc_json)
-
+with open('data.json', 'w', encoding='utf-8') as f:
+    json.dump(a, f, ensure_ascii=False, indent=4)
 
 
 #===============================================================================================================
@@ -189,7 +191,7 @@ def combine_response(df):
     return df
 
 df4 = combine_response(df3)
-'''
+
 
 #separate df
 #df_main for df_stn
@@ -224,7 +226,7 @@ df_ans['result'] =
 
 
 print(df_main2)
-'''
+
 #Get Response column
 df_en['readed'] = 0
 
