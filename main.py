@@ -28,11 +28,11 @@ df2 = getresponse(form_url)
 
 # Transform response to standard pattern
 
-def transform(df):
+def transform(df):  ### Transform dataframe to English format
     # add index column
     df['rec_id'] = df.index.astype(int)
 
-    # Edit column header to code
+    # Edit column header to code (Q01:xxxxxx >> Q01)
     for col in df.columns:
         if col.startswith('R'):
             df.rename({col: str(col[0:6])}, axis=1, inplace=True)
@@ -59,19 +59,78 @@ def transform(df):
     return df
 
 df3 = transform(df2)
-
 df3 = df3.head(10)
 
-x = df3.loc[1,'r_id']
-dfB = df3.loc[1,df3.columns.str.contains(x)]
+#Get one response following index_num
+def getdictresponse(df,index_num): #Get one of accessibility item result
+    i = index_num
+    f = df.loc[i,'r_id'] #Read r_id group
+    ans = df.loc[i,df.columns.str.contains(f)] #Get R-response following R-Group
 
-for i in range(len(dfB)):
-    if type(dfB[i]) != float:
-        dfB[i] = dfB[i][0:2]
+    for x in range(len(ans)):
+        if type(ans[x]) != float:
+            ans[x] = ans[x][0:2]
+        else: ans[x] = None
 
-D = dfB.to_dict()
-print(D) #Get Result as dict
+    A_dict = ans.to_dict()
 
+    ID = str(df.loc[i, 'rec_id'])
+    ins = df.loc[i, 'agent_name']
+    a_stn = df.loc[i, 'stn_name_th']
+    acc_name = df.loc[i, 'acc_name']
+    acc_loc = df.loc[i, 'acc_loc']
+    acc_img = df.loc[i, 'acc_img']
+    acc_timestamp = str(df.loc[i, 'timestamp'])  # change for json format
+    acc_comment = df.loc[i, 'acc_comment']
+
+    acc_item = {
+        "ID": ID,
+        "Attribute": {
+            "Station_Name": a_stn,
+            "Inspector": ins,
+            "AccessibilityName": acc_name,
+            "AccessibilityLocation": acc_loc,
+            "Image": acc_img,
+            "Timestamp": acc_timestamp,
+            "Comment": acc_comment,
+            "ANS": A_dict
+        }
+    }
+
+    return acc_item #
+
+#Get batch responses following index_num range
+def batchresponse(df,start,end):
+    i = start
+    j = end
+    acc_item = {}
+
+    for row in range(i,j):
+        one_item = getdictresponse(df,row)
+        s = str(row)
+        acc_item[s] = one_item
+
+    return acc_item
+
+a = getdictresponse(df3,1)
+a = batchresponse(df3,0,9)
+
+acc_json = json.dumps(a,indent=4,ensure_ascii=False) ### Missing Null value format
+
+print(acc_json)
+
+
+
+#===============================================================================================================
+
+
+
+
+
+
+
+
+'''
 
 
 dfA = df3[['rec_id','timestamp', 'stn_name_th', 'agent_name', 'r_id', 'acc_name', 'acc_loc','acc_img','acc_comment']]
@@ -105,7 +164,7 @@ def getstation(df):
 
 
 dfB = df.loc[:,df.columns.str.contains('rec_id')|df.columns.str.contains('R') | df.columns.str.contains('r_id')]
-'''
+
 def stationdict(self,name_th,name_en,x,y):
     self.name_th = name_th,
     self.name_en = name_en,

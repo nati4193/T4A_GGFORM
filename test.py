@@ -37,3 +37,18 @@ for row in range(len(df)):
                 
                  and df.loc[row].at[col] != 'NaN'
 '''
+
+one = {'a': '2', 'c': 't', 'b': '4'}
+two = {'a': '3.4', 'c': '7.6'}
+three = {'a': 1.2, 'c': 3.4, 'd': '2.3'}
+
+new_dict = {}
+list_dict = [one, two, three]
+
+for d in list_dict:
+    for key in d:
+        if key not in new_dict:
+            new_dict[key] = []
+        new_dict[key].append(d[key])
+
+print(new_dict)
