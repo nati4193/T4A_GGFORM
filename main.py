@@ -1,4 +1,4 @@
-#Import Library
+# Import Library
 import re
 import pandas as pd
 import numpy as np
@@ -6,28 +6,32 @@ import json
 print("Pandas version", pd.__version__)
 
 # Import station database
-def getstationdb():
+path = 'db\\m_station_db.csv'
+
+def getstationdb(path):
     df_stn = pd.read_csv(
-        r'C:\Users\nngna\OneDrive\Documents\MAYDAY_NATI\T4A_GGFORM\db\m_station_db.csv')
+        path)
     df_stn = df_stn.rename(columns={"name_th": "stn_name_th"})
     df_stn.info()
     return df_stn
 
-df1 = getstationdb()
+df1 = getstationdb(path)
 
 # Import response data
 form_url = 'https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997'
 
+# Function for read data form google sheet
 def getresponse(url):
     e = 'export?format=xlsx&'
-    excel_url =  url.replace('edit',e)
-    df = pd.read_excel(excel_url,encoding= 'unicode_escape')
+    excel_url = url.replace('edit', e)
+    df = pd.read_excel(excel_url, encoding='unicode_escape')
     return df
+
 
 df2 = getresponse(form_url)
 
-# Transform response to standard pattern
 
+# Transform response to standard pattern
 def transform(df):  ### Transform dataframe to English format
     # add index column
     df['rec_id'] = df.index.astype(int)
@@ -36,7 +40,7 @@ def transform(df):  ### Transform dataframe to English format
     for col in df.columns:
         if col.startswith('R'):
             df.rename({col: str(col[0:6])}, axis=1, inplace=True)
-        if col.startswith('Unname'):  #drop unnamed column
+        if col.startswith('Unname'):  # drop unnamed column
             del df[str(col)]
 
     # Edit main column header
@@ -58,19 +62,28 @@ def transform(df):  ### Transform dataframe to English format
 
     return df
 
-df3 = transform(df2)
-df3 = df3.head(10)
 
-#Get one response following index_num
-def getdictresponse(df,index_num): #Get one of accessibility item result
+df3 = transform(df2)
+#df3 = df3.head(10)
+
+# Get one response following index_num
+def getdictresponse(df, index_num):  # Get one of accessibility item result
     i = index_num
-    f = df.loc[i,'r_id'] #Read r_id group
-    ans = df.loc[i,df.columns.str.contains(f)] #Get R-response following R-Group
+    f = df.loc[i, 'r_id']  # Read r_id group
+    ans = df.loc[i, df.columns.str.contains(f)]  # Get R-response following R-Group
 
     for x in range(len(ans)):
-        if type(ans[x]) != float:
-            ans[x] = ans[x][0:2]
-        else: ans[x] = None
+        if type(ans[x]) != float:  #Check value in cell is None or not
+            if ans[x].count(':') >= 1 : #Find one or multiple choice answer
+                a = ans[x]
+                ans_list = a.split(", ")
+                m_list = []
+                for j in ans_list:
+                    m_value = str(j)[0:2]
+                    m_list.append(m_value)
+                ans[x] = m_list
+        else:
+            ans[x] = None
 
     A_dict = ans.to_dict()
 
@@ -97,141 +110,32 @@ def getdictresponse(df,index_num): #Get one of accessibility item result
         }
     }
 
-    return acc_item #
+    return acc_item
 
-#Get batch responses following index_num range
-def batchresponse(df,start,end):
+a = getdictresponse(df3, 9)
+
+# Get batch responses following index_num range
+def batchresponse(df, start, end):
     i = start
     j = end
     acc_item = {}
 
-    for row in range(i,j):
-        one_item = getdictresponse(df,row)
-        #s = str(row)
+    for row in range(i, j):
+        one_item = getdictresponse(df, row)
+        # s = str(row)
         acc_item[one_item['ID']] = one_item
-
     return acc_item
 
+
 #### TEST FUNCTION
-a = getdictresponse(df3,1)
-a = batchresponse(df3,0,9)
+a = getdictresponse(df3, 1)
+a = batchresponse(df3, 0, 1509)
 
 ## EXPORT JSON
-acc_json = json.dumps(a,indent=4,ensure_ascii=False)
+acc_json = json.dumps(a, indent=4, ensure_ascii=False)
 print(acc_json)
 with open('data.json', 'w', encoding='utf-8') as f:
     json.dump(a, f, ensure_ascii=False, indent=4)
 
+# ===============================================================================================================
 
-#===============================================================================================================
-
-
-
-
-
-
-
-
-'''
-
-
-dfA = df3[['rec_id','timestamp', 'stn_name_th', 'agent_name', 'r_id', 'acc_name', 'acc_loc','acc_img','acc_comment']]
-
-for row in range(len(df3)):
-    x = df3.loc[row, 'r_id']
-    for col in df3.columns:
-        dfB = df3.loc[:,df3.columns.str.contains(x)]
-
-def getrecord(df):
-    S = df.loc[1]
-
-
-
-    print(S)
-    return S
-
-getrecord(df3)
-
-
-
-
-def getstation(df):
-    dfA = df[['rec_id','timestamp', 'stn_name_th', 'agent_name', 'r_id', 'acc_name', 'acc_loc','acc_img','acc_comment']]
-    stn = {
-    stn = dfA['stn_name_th'].unique()
-    for i in stn:
-        for row in range(len(dfA)):
-    print(stn)
-    return stn
-
-
-dfB = df.loc[:,df.columns.str.contains('rec_id')|df.columns.str.contains('R') | df.columns.str.contains('r_id')]
-
-def stationdict(self,name_th,name_en,x,y):
-    self.name_th = name_th,
-    self.name_en = name_en,
-    self.geometry = [x,y],
-    self.response = [record],
-
-
-
-stn1 = getstation(df3)
-
-
-
-def combine_response(df):
-    for row in range(len(df)):
-        for col in df.columns:
-            if col.startswith('R'):
-                if pd.notna(df.loc[row].at[col]):
-                    x = (str(df.loc[row].at[col]))
-                    y = str(col) + (x[0:2])
-                    df.loc[row].at[col] = y
-        df['output'] = [y[pd.notna(y)].tolist() for y in df.values]
-    return df
-
-df4 = combine_response(df3)
-
-
-#separate df
-#df_main for df_stn
-df_main = df_en[['rec_id','timestamp', 'stn_name_th', 'agent_name', 'r_id', 'acc_name', 'acc_loc','acc_img','acc_comment']]
-print(df_main)
-
-
-# Match Station ID
-df_main2 = df_main.merge(df_stn[['stn_name_th','s_id','stn_id','stn_mode']],on='stn_name_th',how='left')
-
-#Check null data
-df_main2['s_id'].isnull().sum()
-
-#Question Cleansing
-df_ans = df_en.loc[:,df_en.columns.str.contains('rec_id')|df_en.columns.str.contains('Q') | df_en.columns.str.contains('r_id')| df_en.columns.str.contains('stn')]
-
-#Clean Question and Answer of each record
-df_ans = df_ans.head(10)
-for row in range(len(df_ans)):
-    for col in df_ans.columns:
-        print(df_ans.loc[row,str(col)])
-
-#Clean answer
-list = df_ans.to_numpy().tolist()
-
-
-
-df_ans['result'] =
-
-#Export as excel to check
-#df_main2.to_excel(r'C:\Users\nngna\OneDrive\Documents\MAYDAY_NATI\T4A_GGFORM\temp\test.xlsx', index = False)
-
-
-print(df_main2)
-
-#Get Response column
-df_en['readed'] = 0
-
-
-for row,col in df_en.iterrows():
-    if df_en.at[row,col].str.notNull():
-        print(df_en.at[row,col])
-'''

@@ -1,7 +1,7 @@
 is_factor = {
-    "3" : "Very hard",
-    "2" : "Hard",
-    "1" : "Medium",
+    "3": "Very hard",
+    "2": "Hard",
+    "1": "Medium",
 }
 
 Level = {
