@@ -4,11 +4,13 @@ import json
 
 print("Pandas version", pd.__version__)
 
+
 ###FUNCTION :: Import Question Database
 def get_ptai_question(path):
     df_question = pd.read_csv(
         path)
     return df_question
+
 
 PATH_QUESTION = 'db\\T4A_PTAI_QA.csv'
 df_question_db = get_ptai_question(PATH_QUESTION)
@@ -16,12 +18,14 @@ df_question_db = get_ptai_question(PATH_QUESTION)
 ###GET only question list form DB
 df_questionlist = df_question_db.drop_duplicates(subset=['Q_code']).reset_index()
 
+
 ###FUNCTION :: Extract data from google sheet database
 def get_response(url):
     EXCEL_FORMAT = 'export?format=xlsx&'
     excel_url = url.replace('edit', EXCEL_FORMAT)
     df = pd.read_excel(excel_url, encoding='unicode_escape')
     return df
+
 
 # Import response data
 form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
@@ -73,8 +77,7 @@ def get_station_db(path):
 df1 = get_station_db(path_station)
 
 
-
-###FUNCTION :: Transform_header response to standard pattern
+# FUNCTION :: Transform_header response to standard pattern
 def transform_header(df):  ###Transform_header dataframe to English format
     # add index column
     df['rec_id'] = df.index.astype(int)
@@ -105,10 +108,9 @@ def transform_header(df):  ###Transform_header dataframe to English format
 
     return df
 
+
 df3 = df2.copy()
 df3 = transform_header(df3)
-
-df3['stn_name_th'].unique().shape
 
 
 # df = df3.head(10)
@@ -117,14 +119,13 @@ df3['stn_name_th'].unique().shape
 
 def get_dict_response(df, index_num):  # Get one of accessibility item result
     i = index_num
-    f = df.loc[i, 'r_id']  # Read r_id group
-    ans = df.loc[i, df.columns.str.contains(f)]  # Get R-response following R-Group
+    r_group = df.loc[i, 'r_id']  # Read r_id group
+    ans = df.loc[i, df.columns.str.contains(r_group)]  # Get R-response following R-Group
 
     for x in range(len(ans)):
         if type(ans[x]) != float:  # Check value in cell is None or not
             if ans[x].count(':') >= 1:  # Find one or multiple choice answer
-                a = ans[x]
-                ans_list = a.split(", ")
+                ans_list = ans[x].split(", ")
                 m_list = []
                 for j in ans_list:
                     m_value = str(j)[0:2]
@@ -160,7 +161,9 @@ def get_dict_response(df, index_num):  # Get one of accessibility item result
 
     return acc_item
 
+
 a = get_dict_response(df3, 9)
+
 
 ###FUNCTION :: Get batch responses following index_num range
 def batch_response(df, start, end):
