@@ -4,20 +4,17 @@ import json
 
 print("Pandas version", pd.__version__)
 
-
 ###FUNCTION :: Import Question Database
 def get_ptai_question(path):
     df_question = pd.read_csv(
         path)
     return df_question
 
-
 PATH_QUESTION = 'db\\T4A_PTAI_QA.csv'
 df_question_db = get_ptai_question(PATH_QUESTION)
 
 ###GET only question list form DB
 df_questionlist = df_question_db.drop_duplicates(subset=['Q_code']).reset_index()
-
 
 ###FUNCTION :: Extract data from google sheet database
 def get_response(url):
@@ -29,7 +26,7 @@ def get_response(url):
 
 # Import response data
 form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
-df2 = get_response(form_url)
+df_form = get_response(form_url)
 
 
 ###FUNCTION :: Import Question form Google Form for recheck
@@ -49,21 +46,19 @@ def get_formquestion(df):
 
 
 ##Get Question list
-q_df = get_formquestion(df2)
+df_formquestion = get_formquestion(df_form)
 
 # Split question
-split_question = q_df['question'].str.split(' : ', n=1, expand=True)
-q_df['q_code'] = split_question[0]
-q_df['q_name'] = split_question[1]
-print(q_df)
+split_question = df_formquestion['question'].str.split(' : ', n=1, expand=True)
+df_formquestion['q_code'] = split_question[0]
+df_formquestion['q_name'] = split_question[1]
+df_formquestion.sort_values(by=['q_code'],inplace=True)
 
-q_df.to_excel('form_question.xlsx', engine='xlsxwriter')
-
-df_question_join = q_df.join(df_question_db, lsuffix='_form', rsuffix='_db')
+#CHECK form's question is in PTAI question DB
+for row in range(df_formquestion)
 
 # Import station database
 path_station = 'db\\m_station_db.csv'
-
 
 ###FUNCTION :: Import station db
 def get_station_db(path):
@@ -72,7 +67,6 @@ def get_station_db(path):
     df_stn = df_stn.rename(columns={"name_th": "stn_name_th"})
     df_stn.info()
     return df_stn
-
 
 df1 = get_station_db(path_station)
 
