@@ -1,4 +1,4 @@
-# Import Library
+#IMPORT Library
 import pandas as pd
 import json
 
@@ -10,11 +10,12 @@ def get_ptai_question(path):
         path)
     return df_question
 
-PATH_QUESTION = 'db\\T4A_PTAI_QA.csv'
+PATH_QUESTION = 'db\\T4A_PTAI_QA _Q.csv'
 df_question_db = get_ptai_question(PATH_QUESTION)
 
 ###GET only question list form DB
-df_questionlist = df_question_db.drop_duplicates(subset=['Q_code']).reset_index()
+df_questionlist = df_question_db.drop_duplicates(subset=['Code']).reset_index()
+print(len(df_questionlist))
 
 ###FUNCTION :: Extract data from google sheet database
 def get_response(url):
@@ -31,7 +32,7 @@ df_form = get_response(form_url)
 
 ###FUNCTION :: Import Question form Google Form for recheck
 def get_formquestion(df):
-    # Get Question form column header begin with R
+    # Get Question's form column header begin with R
     ggform_question = []
     for col in df.columns:
         if col.startswith('R'):
@@ -42,20 +43,25 @@ def get_formquestion(df):
     cell = {'question': ggform_question}
     question_df = pd.DataFrame(cell)
     question_df.sort_values(by=['question'], inplace=True)
+    split_table = question_df['question'].str.split(' : ', n=1, expand=True)
+    question_df['q_code'] = split_table[0]
+    question_df['q_name'] = split_table[1]
+    question_df.sort_values(by=['q_code'],inplace=True)
     return question_df
 
 
 ##Get Question list
 df_formquestion = get_formquestion(df_form)
+df_formquestion.to_csv('output/formquestion.csv')
 
-# Split question
-split_question = df_formquestion['question'].str.split(' : ', n=1, expand=True)
-df_formquestion['q_code'] = split_question[0]
-df_formquestion['q_name'] = split_question[1]
-df_formquestion.sort_values(by=['q_code'],inplace=True)
-
+add_question = []
 #CHECK form's question is in PTAI question DB
-for row in range(df_formquestion)
+for row in df_formquestion['q_code']:
+    if row in df_question_db.values:
+        pass
+    else:
+        add_question.append(row)
+
 
 # Import station database
 path_station = 'db\\m_station_db.csv'
@@ -68,22 +74,22 @@ def get_station_db(path):
     df_stn.info()
     return df_stn
 
-df1 = get_station_db(path_station)
+df_stn_db = get_station_db(path_station)
 
 
-# FUNCTION :: Transform_header response to standard pattern
+# FUNCTION :: Transform google form's header response to standard pattern
 def transform_header(df):  ###Transform_header dataframe to English format
     # add index column
     df['rec_id'] = df.index.astype(int)
 
-    # Edit column header to code (Q01:xxxxxx >> Q01)
+    # TRIM column header to question code (Q01:xxxxxx >> Q01)
     for col in df.columns:
         if col.startswith('R'):
             df.rename({col: str(col[0:6])}, axis=1, inplace=True)
         if col.startswith('Unname'):  # drop unnamed column
             del df[str(col)]
 
-    # Edit main column header
+    # CHANGE main column header name
     df.rename({
         "Timestamp": "timestamp",
         "ชื่อสถานีที่สำรวจ": "stn_name_th",
@@ -101,7 +107,6 @@ def transform_header(df):  ###Transform_header dataframe to English format
     print(df['r_id'])
 
     return df
-
 
 df3 = df2.copy()
 df3 = transform_header(df3)
