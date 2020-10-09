@@ -1,8 +1,9 @@
-#IMPORT Library
+# IMPORT Library
 import pandas as pd
 import json
 
 print("Pandas version", pd.__version__)
+
 
 ###FUNCTION :: Import Question Database
 def get_ptai_question(path):
@@ -10,12 +11,14 @@ def get_ptai_question(path):
         path)
     return df_question
 
+
 PATH_QUESTION = 'db\\T4A_PTAI_QA _Q.csv'
 df_question_db = get_ptai_question(PATH_QUESTION)
 
 ###GET only question list form DB
 df_questionlist = df_question_db.drop_duplicates(subset=['Code']).reset_index()
 print(len(df_questionlist))
+
 
 ###FUNCTION :: Extract data from google sheet database
 def get_response(url):
@@ -46,7 +49,7 @@ def get_formquestion(df):
     split_table = question_df['question'].str.split(' : ', n=1, expand=True)
     question_df['q_code'] = split_table[0]
     question_df['q_name'] = split_table[1]
-    question_df.sort_values(by=['q_code'],inplace=True)
+    question_df.sort_values(by=['q_code'], inplace=True)
     return question_df
 
 
@@ -55,16 +58,16 @@ df_formquestion = get_formquestion(df_form)
 df_formquestion.to_csv('output/formquestion.csv')
 
 add_question = []
-#CHECK form's question is in PTAI question DB
+# CHECK form's question is in PTAI question DB
 for row in df_formquestion['q_code']:
     if row in df_question_db.values:
         pass
     else:
         add_question.append(row)
 
-
 # Import station database
 path_station = 'db\\m_station_db.csv'
+
 
 ###FUNCTION :: Import station db
 def get_station_db(path):
@@ -73,6 +76,7 @@ def get_station_db(path):
     df_stn = df_stn.rename(columns={"name_th": "stn_name_th"})
     df_stn.info()
     return df_stn
+
 
 df_stn_db = get_station_db(path_station)
 
@@ -108,8 +112,8 @@ def transform_header(df):  ###Transform_header dataframe to English format
 
     return df
 
-df3 = df2.copy()
-df3 = transform_header(df3)
+
+df_standard = transform_header(df_form)
 
 
 # df = df3.head(10)
@@ -161,7 +165,7 @@ def get_dict_response(df, index_num):  # Get one of accessibility item result
     return acc_item
 
 
-a = get_dict_response(df3, 9)
+test_get = get_dict_response(df_standard, 9)
 
 
 ###FUNCTION :: Get batch responses following index_num range
@@ -171,19 +175,26 @@ def batch_response(df, start, end):
     for row in range(start, end):
         one_item = get_dict_response(df, row)
         # s = str(row)
-        acc_item[one_item['ID']] = one_item
+        acc_item[one_item['id']] = one_item
     return acc_item
 
 
 ####TEST FUNCTION
 a = get_dict_response(df3, 1)
-a = batch_response(df3, 0, 10)
+df_dict_100 = batch_response(df_standard, 0, 100)
 
-##EXPORT JSON
-acc_json = json.dumps(a, indent=4, ensure_ascii=False)
-print(acc_json)
-with open('data.json', 'w', encoding='utf-8') as f:
-    json.dump(a, f, ensure_ascii=False, indent=4)
+
+##_MERGE
+
+
+##_EXPORT to JSON
+def export2json(dict):
+    # acc_json = json.dumps(dict, indent=4, ensure_ascii=False)
+    with open('output/data.json', 'w', encoding='utf-8') as f:
+        json.dump(dict, f, ensure_ascii=False, indent=4)
+
+
+export2json(df_dict_100)
 
 # EXPORT QUESTION LIST
 
