@@ -121,33 +121,35 @@ df_standard = transform_header(df_form)
 ###FUNCTION :: Get one response following index_num
 
 def get_dict_response(df, index_num):  # Get one of accessibility item result
-    i = index_num
-    r_group = df.loc[i, 'r_id']  # Read r_id group
-    ans = df.loc[i, df.columns.str.contains(r_group)]  # Get R-response following R-Group
+    row = index_num
+    r_group = df.loc[row, 'r_id']  # Get r_id group for selecting column
+    ans = df.loc[row, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
 
-    for x in range(len(ans)):
-        if type(ans[x]) != float:  # Check value in cell is None or not
-            if ans[x].count(':') >= 1:  # Find one or multiple choice answer
-                ans_list = ans[x].split(", ")
-                m_list = []
-                for j in ans_list:
-                    m_value = str(j)[0:2]
-                    m_list.append(m_value)
-                ans[x] = m_list
+    for col_head in range(len(ans)):                    #Looping Each Column in R-column
+        if type(ans[col_head]) != float:                # Check value in cell is None?
+            if ans[col_head].count(':') >= 1:           # If not null -> Find one or multiple choice answer
+                ans_list = ans[col_head].split(", ")    #Separate Multiple choice to one value with comma
+                m_list = []                             #Set List for get trimmed answer
+                for j in ans_list:                      #Looping member in list for trimming
+                    m_value = str(j)[0:2]               #Trimming answer
+                    m_list.append(m_value)              #Join to previoues answer
+                ans[col_head] = m_list                  #Return trimmed answer back
         else:
-            ans[x] = None
+            ans[col_head] = None                        #Return NUll for blank answer
 
-    A_dict = ans.to_dict()
+    A_dict = ans.to_dict()                              #Create answer's dict to get value
 
-    ID = str(df.loc[i, 'rec_id'])
-    ins = df.loc[i, 'agent_name']
-    a_stn = df.loc[i, 'stn_name_th']
-    acc_name = df.loc[i, 'acc_name']
-    acc_loc = df.loc[i, 'acc_loc']
-    acc_img = df.loc[i, 'acc_img']
-    acc_timestamp = str(df.loc[i, 'timestamp'])  # change for json format
-    acc_comment = df.loc[i, 'acc_comment']
+    # ASSIGN EACH BASIC INFO COLUMN TO DICT VALUE
+    ID = str(df.loc[row, 'rec_id'])
+    ins = df.loc[row, 'agent_name']
+    a_stn = df.loc[row, 'stn_name_th']
+    acc_name = df.loc[row, 'acc_name']
+    acc_loc = df.loc[row, 'acc_loc']
+    acc_img = df.loc[row, 'acc_img']
+    acc_timestamp = str(df.loc[row, 'timestamp'])  # change for json format
+    acc_comment = df.loc[row, 'acc_comment']
 
+    # MATCH VALUE TO KEY
     acc_item = {
         "id": ID,
         "attribute": {
@@ -165,7 +167,6 @@ def get_dict_response(df, index_num):  # Get one of accessibility item result
     return acc_item
 
 
-test_get = get_dict_response(df_standard, 9)
 
 
 ###FUNCTION :: Get batch responses following index_num range
@@ -180,11 +181,14 @@ def batch_response(df, start, end):
 
 
 ####TEST FUNCTION
-a = get_dict_response(df3, 1)
+test_get = get_dict_response(df_standard, 9)
 df_dict_100 = batch_response(df_standard, 0, 100)
 
 
-##_MERGE
+##_MERGE PTAI SCORE TO RECORD
+
+
+
 
 
 ##_EXPORT to JSON
