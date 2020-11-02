@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import pprint
 
 df = pd.DataFrame([[np.nan,'P3:pass','D1:xxxxx','M2:yyyy','R01'],
                    ['P1:OK','M1:failed','D2:zzzzz','M2:aaaaaa','R02'],
@@ -166,9 +167,7 @@ def transform_header(df):  ###Transform_header dataframe to English format
 
     return df
 
-
 df_standard = transform_header(df_form)
-
 
 # df = df3.head(10)
 
@@ -252,23 +251,30 @@ def get_df_response(df,index_num):
             df_item.iat[row,col] = "X"                        #Return NUll for blank answer
     return df_item
 
-oneitem = get_df_response(df_standard,285)
-
-#def create_ptai_dict(df,index_num):
-#demo input
-df = df_standard
-row = 285
+def create_ptai_dict(df,index_num):
+    row = index_num
 
     # ASSIGN EACH BASIC INFO COLUMN TO DICT VALUE
     ID = str(df.loc[row, 'rec_id'])
     ins = df.loc[row, 'agent_name']
     a_stn = df.loc[row, 'stn_name_th']
     acc_name = df.loc[row, 'acc_name']
+    acc_rid = df.loc[row,'r_id']
     acc_loc = df.loc[row, 'acc_loc']
     acc_img = df.loc[row, 'acc_img']
     acc_timestamp = str(df.loc[row, 'timestamp'])  # change for json format
     acc_comment = df.loc[row, 'acc_comment']
     df_ans = get_df_response(df,row)
+
+    # MATCH ANSWER DICT
+    for row in range(len(df_ans)):
+        ans_dict = {
+            "ans_id": ID + "-" + str(df_ans.iat[row, 1]),
+            "question_id": str(df_ans.iat[row, 1]),
+            "score": df_ans.iat[row, 3],
+            "ans_label": df_ans.iat[row, 2],
+            "ans_detail": df_ans.iat[row, 0]
+            }
 
     # MATCH VALUE TO KEY
     acc_item = {
@@ -277,59 +283,42 @@ row = 285
             "station_name": a_stn,
             "inspector": ins,
             "accessibility_name": acc_name,
+            "accessibility_group":acc_rid,
             "accessibility_location": acc_loc,
             "image": acc_img,
             "timestamp": acc_timestamp,
-            "comment": acc_comment
-            }
-        }
-    print(acc_item)
-
-row = 1
-df_ans.iat[row,1]
-
-    #MATCH ANSWER DICT
-    for row in range(len(df_ans)):
-        ans_dict = {
-            "ans_id": acc_item.get("id") + "-" + str(df_ans.iat[row,1]),
-            "ans_attribute": {
-                "question_id": str(df_ans.iat[row,1]),
-                "score": df_ans.iat[row,3],
-                "ans_label": df_ans.iat[row,2],
-                "ans_detail": df_ans.iat[row,0]
+            "comment": acc_comment,
+            "ans_dict":ans_dict
             }
         }
 
+    return acc_item
+
+one = create_ptai_dict(df_standard,285)
+pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(one)
 
 ###FUNCTION :: Get batch responses following index_num range
 def batch_response(df, start, end):
     acc_item = {}
 
     for row in range(start, end):
-        one_item = get_dict_response(df, row)
+        one_item = create_ptai_dict(df, row)
         # s = str(row)
         acc_item[one_item['id']] = one_item
     return acc_item
 
-
-####TEST FUNCTION
-test_get = get_dict_response(df_standard, 9)
-df_dict_100 = batch_response(df_standard, 0, 100)
-
-test_get_detail = get_dict_response_detail(df_standard, 9)
-
+dict20 = batch_response(df_standard,1,20)
 
 ##_MERGE PTAI SCORE TO RECORD
 
 
 ##_EXPORT to JSON
 def export2json(dict,filename):
-    # acc_json = json.dumps(dict, indent=4, ensure_ascii=False)
-    with open('output/data.json', 'w', encoding='utf-8') as f:
+    with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
         json.dump(dict, f, ensure_ascii=False, indent=4)
 
-
-export2json(df_dict_100)
+export2json(dict20,"test_detail")
 
 
 # EXPORT QUESTION LIST
