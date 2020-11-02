@@ -1,6 +1,7 @@
-# IMPORT Library
+#IMPORT Library
 import pandas as pd
 import json
+
 
 print("Pandas version", pd.__version__)
 
@@ -167,12 +168,58 @@ def get_dict_response(df, index_num):  # Get one of accessibility item result
     return acc_item
 
 
+###FUNCTION :: Get one response following index_num with answer detail
+
+def get_dict_response_detail(df, index_num):  # Get one of accessibility item result
+    row = index_num
+    r_group = df.loc[row, 'r_id']  # Get r_id group for selecting column
+    ans = df.loc[row, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
+
+    for col_head in range(len(ans)):                     #Looping Each Column in R-column
+        if type(ans[col_head]) != float:                 # Check value in cell is None?
+            if ans[col_head].count(':') >= 1:            # If not null -> Find one or multiple choice answer
+                ans_list = ans[col_head].split(", ")     #Separate Multiple choice to one value with comma
+            #    m_list = []                             #Set List for get trimmed answer
+            #    for j in ans_list:                      #Looping member in list for trimming
+            #       m_value = str(j)[0:2]                #Trimming answer
+            #        m_list.append(m_value)              #Join to previoues answer
+            #    ans[col_head] = m_list                  #Return trimmed answer back
+                ans[col_head] = ans_list
+        else:
+            ans[col_head] = None                        #Return NUll for blank answer
+
+    Ans_dict_full = ans.to_dict()                       #Create answer's dict to get value
+
+    # ASSIGN EACH BASIC INFO COLUMN TO DICT VALUE
+    ID = str(df.loc[row, 'rec_id'])
+    ins = df.loc[row, 'agent_name']
+    a_stn = df.loc[row, 'stn_name_th']
+    acc_name = df.loc[row, 'acc_name']
+    acc_loc = df.loc[row, 'acc_loc']
+    acc_img = df.loc[row, 'acc_img']
+    acc_timestamp = str(df.loc[row, 'timestamp'])  # change for json format
+    acc_comment = df.loc[row, 'acc_comment']
+
+    # MATCH VALUE TO KEY
+    acc_item = {
+        "id": ID,
+        "attribute": {
+            "station_name": a_stn,
+            "inspector": ins,
+            "accessibility_name": acc_name,
+            "accessibility_location": acc_loc,
+            "image": acc_img,
+            "timestamp": acc_timestamp,
+            "comment": acc_comment,
+            "ans_dict": Ans_dict_full
+        }
+    }
+    return acc_item
 
 
 ###FUNCTION :: Get batch responses following index_num range
 def batch_response(df, start, end):
     acc_item = {}
-
     for row in range(start, end):
         one_item = get_dict_response(df, row)
         # s = str(row)
@@ -184,21 +231,19 @@ def batch_response(df, start, end):
 test_get = get_dict_response(df_standard, 9)
 df_dict_100 = batch_response(df_standard, 0, 100)
 
+test_get_detail = get_dict_response_detail(df_standard, 9)
+type(test_get_detail)
 
 ##_MERGE PTAI SCORE TO RECORD
 
 
-
-
-
 ##_EXPORT to JSON
-def export2json(dict):
-    # acc_json = json.dumps(dict, indent=4, ensure_ascii=False)
-    with open('output/data.json', 'w', encoding='utf-8') as f:
+def export2json(dict,filename):
+    with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
         json.dump(dict, f, ensure_ascii=False, indent=4)
 
+export2json(test_get_detail,"test")
 
-export2json(df_dict_100)
 
 # EXPORT QUESTION LIST
 
