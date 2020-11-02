@@ -311,13 +311,8 @@ def batch_response(df, start, end):
         acc_item[one_item['id']] = one_item
     return acc_item
 
-dict20 = batch_response(df_standard,1,20)
-pp.pprint(dict20)
-
-##_MERGE PTAI SCORE TO RECORD
-#DEMO INPUT
-
-dict20
+dict_some = batch_response(df_standard,1,1000)
+pp.pprint(dict_some)
 
 ### FUNCTION MERGE QUESTION DATABASE TO DICT
 def merge_score(ptai_dict,db_question):
@@ -336,23 +331,24 @@ def merge_score(ptai_dict,db_question):
     return ptai_dict
 
 #TEST FUNCTION
-merged_dict = merge_score(dict20,df_question_db)
+merged_dict = merge_score(dict_some,df_question_db)
 
-'''
-len(dict20)
-get_question[1]
-#Try looping in dict
-len(get_question)
+### FUNCTION GROUPING AS STATION
+def get_station_set(merged_dict):
+    station_list = []
+    for id in merged_dict:
+        station_list.append(merged_dict[id]['attribute']['station_name'])
+    stn_set = sorted(list(set(station_list))               )
+    return stn_set
 
-for row in range(len(dict20)):
-    for i in range(len(get_question)):
-        if df_question_db.loc[row].at['Code'] == get_question[i]:
-            print(row," : TRUE :",get_question," : \n")
-        else:
-            pass
+station = get_station_set(merged_dict)
+###############################################################################################
+#QUERY DATA AS STATION NAME
 
-df_question_db.loc[row].at['Code']
-'''
+
+stn_demo = station[0]
+df_stn_total = pd.DataFrame(data,columns=Col_list)
+
 
 ##_EXPORT to JSON
 def export2json(dict,filename):
