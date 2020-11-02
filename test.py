@@ -54,9 +54,11 @@ for d in list_dict:
 
 print(new_dict)
 
+###################################################################################################################
 #IMPORT Library
 import pandas as pd
 import json
+import pprint
 
 print("Pandas version", pd.__version__)
 
@@ -65,16 +67,17 @@ print("Pandas version", pd.__version__)
 def get_ptai_question(path):
     df_question = pd.read_csv(
         path)
+    df_question = df_question.set_index('Code')
     return df_question
 
 
 PATH_QUESTION = 'db\\T4A_PTAI_QA _Q.csv'
 df_question_db = get_ptai_question(PATH_QUESTION)
-
+'''
 ###GET only question list form DB
 df_questionlist = df_question_db.drop_duplicates(subset=['Code']).reset_index()
 print(len(df_questionlist))
-
+  '''
 
 ###FUNCTION :: Extract data from google sheet database
 def get_response(url):
@@ -309,9 +312,47 @@ def batch_response(df, start, end):
     return acc_item
 
 dict20 = batch_response(df_standard,1,20)
+pp.pprint(dict20)
 
 ##_MERGE PTAI SCORE TO RECORD
+#DEMO INPUT
 
+dict20
+
+### FUNCTION MERGE QUESTION DATABASE TO DICT
+def merge_score(ptai_dict,db_question):
+    df = db_question
+    for id in ptai_dict:
+        q_id = ptai_dict[id]['attribute']['ans_dict']['question_id']
+        add_is = df.at[q_id,'IS']
+        add_X = df.at[q_id,"X"]
+        add_L = df.at[q_id,"L"]
+        add_U = df.at[q_id,"U"]
+        #Assign value to PTAI Dict
+        ptai_dict[id]['attribute']['ans_dict']['IS'] = add_is
+        ptai_dict[id]['attribute']['ans_dict']['X'] = add_X
+        ptai_dict[id]['attribute']['ans_dict']['L'] = add_L
+        ptai_dict[id]['attribute']['ans_dict']['U'] = add_U
+    return ptai_dict
+
+#TEST FUNCTION
+merged_dict = merge_score(dict20,df_question_db)
+
+'''
+len(dict20)
+get_question[1]
+#Try looping in dict
+len(get_question)
+
+for row in range(len(dict20)):
+    for i in range(len(get_question)):
+        if df_question_db.loc[row].at['Code'] == get_question[i]:
+            print(row," : TRUE :",get_question," : \n")
+        else:
+            pass
+
+df_question_db.loc[row].at['Code']
+'''
 
 ##_EXPORT to JSON
 def export2json(dict,filename):

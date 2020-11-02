@@ -15,7 +15,11 @@
                 "question_id": "R02Q13",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 1.0,
+                "U": "VA"
             }
         }
     },
@@ -35,7 +39,11 @@
                 "question_id": "R10Q08",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 2.0,
+                "U": "MA"
             }
         }
     },
@@ -55,7 +63,11 @@
                 "question_id": "R05Q12",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 0.0,
+                "X": 0.0,
+                "L": 0.0,
+                "U": "SK"
             }
         }
     },
@@ -75,7 +87,11 @@
                 "question_id": "R09Q09",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 2.0,
+                "U": "VA"
             }
         }
     },
@@ -95,7 +111,11 @@
                 "question_id": "R01Q16",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 2.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "AA"
             }
         }
     },
@@ -115,7 +135,11 @@
                 "question_id": "R06Q09",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 2.0,
+                "U": "VA"
             }
         }
     },
@@ -135,7 +159,11 @@
                 "question_id": "R01Q16",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 2.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "AA"
             }
         }
     },
@@ -157,7 +185,11 @@
                 "ans_label": [
                     "P1"
                 ],
-                "ans_detail": "P1 : ผ่านตามเงื่อนไขทุกประการ"
+                "ans_detail": "P1 : ผ่านตามเงื่อนไขทุกประการ",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 1.0,
+                "U": "SV"
             }
         }
     },
@@ -177,7 +209,11 @@
                 "question_id": "R03Q17",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "NW"
             }
         }
     },
@@ -197,7 +233,11 @@
                 "question_id": "R12Q14",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 3.0,
+                "X": 4.0,
+                "L": 1.0,
+                "U": "NW"
             }
         }
     },
@@ -219,7 +259,11 @@
                 "ans_label": [
                     "P1"
                 ],
-                "ans_detail": "P1 : ผ่านตามเงื่อนไขทุกประการ"
+                "ans_detail": "P1 : ผ่านตามเงื่อนไขทุกประการ",
+                "IS": 1.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "VA"
             }
         }
     },
@@ -241,7 +285,11 @@
                 "ans_label": [
                     "P2"
                 ],
-                "ans_detail": "P2 : ไม่มีจุดต่างระดับที่อาจเกิดอันตราย"
+                "ans_detail": "P2 : ไม่มีจุดต่างระดับที่อาจเกิดอันตราย",
+                "IS": 2.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "SF"
             }
         }
     },
@@ -261,7 +309,11 @@
                 "question_id": "R04Q22",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 2.0,
+                "U": "VA"
             }
         }
     },
@@ -281,7 +333,11 @@
                 "question_id": "R12Q14",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 3.0,
+                "X": 4.0,
+                "L": 1.0,
+                "U": "NW"
             }
         }
     },
@@ -301,7 +357,11 @@
                 "question_id": "R18Q01",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 1.0,
+                "X": 1.0,
+                "L": 1.0,
+                "U": "NW"
             }
         }
     },
@@ -321,7 +381,11 @@
                 "question_id": "R01Q16",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 2.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "AA"
             }
         }
     },
@@ -343,7 +407,11 @@
                 "ans_label": [
                     "P2"
                 ],
-                "ans_detail": "P2 : ไม่ใช้บันไดเลื่อนหรือทางเลื่อน"
+                "ans_detail": "P2 : ไม่ใช้บันไดเลื่อนหรือทางเลื่อน",
+                "IS": 1.0,
+                "X": 2.0,
+                "L": 3.0,
+                "U": "SF"
             }
         }
     },
@@ -363,7 +431,11 @@
                 "question_id": "R01Q16",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 2.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "AA"
             }
         }
     },
@@ -383,7 +455,11 @@
                 "question_id": "R01Q16",
                 "score": null,
                 "ans_label": null,
-                "ans_detail": "X"
+                "ans_detail": "X",
+                "IS": 2.0,
+                "X": 2.0,
+                "L": 2.0,
+                "U": "AA"
             }
         }
     }
