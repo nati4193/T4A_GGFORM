@@ -172,56 +172,6 @@ def transform_header(df):  ###Transform_header dataframe to English format
 
 df_standard = transform_header(df_form)
 
-# df = df3.head(10)
-
-###FUNCTION :: Get one response following index_num
-'''
-def get_dict_response(df, index_num):  # Get one of accessibility item result
-    row = index_num
-    r_group = df.loc[row, 'r_id']  # Get r_id group for selecting column
-    ans = df.loc[row, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
-
-    for col_head in range(len(ans)):                    #Looping Each Column in R-column
-        if type(ans[col_head]) != float:                # Check value in cell is None?
-            if ans[col_head].count(':') >= 1:           # If not null -> Find one or multiple choice answer
-                ans_list = ans[col_head].split(", ")    #Separate Multiple choice to one value with comma
-                m_list = []                             #Set List for get trimmed answer
-                for j in ans_list:                      #Looping member in list for trimming
-                    m_value = str(j)[0:2]               #Trimming answer
-                    m_list.append(m_value)              #Join to previoues answer
-                ans[col_head] = m_list                  #Return trimmed answer back
-        else:
-            ans[col_head] = None                        #Return NUll for blank answer
-
-    A_dict = ans.to_dict()                              #Create answer's dict to get value
-
-    # ASSIGN EACH BASIC INFO COLUMN TO DICT VALUE
-    ID = str(df.loc[row, 'rec_id'])
-    ins = df.loc[row, 'agent_name']
-    a_stn = df.loc[row, 'stn_name_th']
-    acc_name = df.loc[row, 'acc_name']
-    acc_loc = df.loc[row, 'acc_loc']
-    acc_img = df.loc[row, 'acc_img']
-    acc_timestamp = str(df.loc[row, 'timestamp'])  # change for json format
-    acc_comment = df.loc[row, 'acc_comment']
-
-    # MATCH VALUE TO KEY
-    acc_item = {
-        "id": ID,
-        "attribute": {
-            "station_name": a_stn,
-            "inspector": ins,
-            "accessibility_name": acc_name,
-            "accessibility_location": acc_loc,
-            "image": acc_img,
-            "timestamp": acc_timestamp,
-            "comment": acc_comment,
-            "ans": A_dict
-        }
-    }
-
-    return acc_item
-'''
 ###FUNCTION :: Get one response following index_num with answer detail
 def get_df_response(df,index_num):
     r_group = df.loc[index_num, 'r_id']                        # Get r_id group for selecting column
