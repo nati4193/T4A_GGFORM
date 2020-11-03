@@ -110,6 +110,8 @@ def transform_header(df):  ###Transform_header dataframe to English format
 df_standard = transform_header(df_form)
 
 ###FUNCTION :: Get one response following index_num with answer detail
+df = df_standard
+index_num = 100
 def get_df_response(df,index_num):
     r_group = df.loc[index_num, 'r_id']                        # Get r_id group for selecting column
     all_ans = df.loc[index_num, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
@@ -140,7 +142,10 @@ def get_df_response(df,index_num):
         else:
             df_item.iat[row,col] = "X"                        #Return NUll for blank answer
     return df_item
+
 #########################################################################
+df = df_standard
+index_num = 100
 def create_ptai_dict(df,index_num):
     row = index_num
 
@@ -156,15 +161,28 @@ def create_ptai_dict(df,index_num):
     acc_comment = df.loc[row, 'acc_comment']
     df_ans = get_df_response(df,row)
 
-    # MATCH ANSWER DICT
+    # TRANSFORM DATAFRAME TO ANSWER DICT
+    ans_dict = {}
+    ans_name = []
+    question_id = []
+    score = []
+    ans_label = []
+    ans_detail = []
     for row in range(len(df_ans)):
-        ans_dict = {
-            "ans_id": ID + "-" + str(df_ans.iat[row, 1]),
-            "question_id": str(df_ans.iat[row, 1]),
-            "score": df_ans.iat[row, 3],
-            "ans_label": df_ans.iat[row, 2],
-            "ans_detail": df_ans.iat[row, 0]
-            }
+        ans_name.append((str(ID + "-" + str(df_ans.iat[row, 1]))))
+        question_id.append(df_ans.iat[row, 1])
+        score.append(df_ans.iat[row, 3])
+        ans_label.append(df_ans.iat[row, 2])
+        ans_detail.append(df_ans.iat[row, 0])
+
+    for i in range(len(ans_name)):
+        ans_info = {
+            'question_id':question_id[i],
+            'score':score[i],
+            'ans_label':ans_label[i],
+            'ans_detail':ans_detail[i]
+        }
+        ans_dict[ans_name[i]] = ans_info
 
     # MATCH VALUE TO KEY
     acc_item = {
@@ -181,8 +199,8 @@ def create_ptai_dict(df,index_num):
             "ans_dict":ans_dict
             }
         }
-
     return acc_item
+
 #########################################################################
 
 one = create_ptai_dict(df_standard,285)
@@ -199,7 +217,7 @@ def batch_response(df, start, end):
         acc_item[one_item['id']] = one_item
     return acc_item
 #########################################################################
-dict_some = batch_response(df_standard,1,1000)
+dict_some = batch_response(df_standard,1,10)
 pp.pprint(dict_some)
 
 ### FUNCTION MERGE QUESTION DATABASE TO DICT
@@ -240,11 +258,13 @@ score_db = pd.DataFrame(data=[100,100,100,55,60,70,0,20,30],
 
 ##CALCULATION PART
 #Add station name
+df = df_question_db
 i = 5
 stn_demo = station[i]
 print(stn_demo)
-r_group = R_active_list[0]
-df = df_question_db
+r_group = R_active_list[4]
+print(r_group)
+
 
 '''
 #Set up variable following Q_ID
@@ -271,7 +291,6 @@ for item in questionlist_station:
     xlist_stn.append(df.at[item, "X"])
 
 stn_r_score = []
-
 #Get
 for i in range(len(resultlist_station)):
     if resultlist_station[i] != None:
