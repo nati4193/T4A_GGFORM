@@ -72,6 +72,12 @@ def get_station_db(path):
     df_stn.info()
     return df_stn
 #########################################################################
+#Set up score table
+score_db = pd.DataFrame(data=[100,100,100,55,60,70,0,20,30],
+                        columns=['point'],
+                        index=['4P','2P','1P','4M','2M','1M','4D','2D','1D'])
+
+#######################################################################################
 
 df_stn_db = get_station_db(path_station)
 
@@ -110,9 +116,9 @@ def transform_header(df):  ###Transform_header dataframe to English format
 df_standard = transform_header(df_form)
 
 ###FUNCTION :: Get one response following index_num with answer detail
-df = df_standard
-index_num = 1126
-#def get_df_response(df,index_num):
+#df = df_standard
+#index_num = 1126
+def get_df_response(df,index_num):
     r_group = df.loc[index_num, 'r_id']                             # Get r_id group for selecting column
     all_ans = df.loc[index_num, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
     df_item = all_ans.to_frame()
@@ -137,22 +143,29 @@ index_num = 1126
                 ans_list.append('X1')
         else:
             ans_list.append('X0')
+
     df_item['a_trim'] = ans_list
+    start_list = []
+    start_list = df_item['a_trim'].tolist()
     final_list = []
-    final_list = df_item['a_trim'].tolist()
-        for value in final_list:
-        if type(value) == list:
-            for i in value:
+    for id in range(len(start_list)):
+        item = start_list[id]
+        if type(item) == list:
+            for i in item:
                 if i[0] == 'P':
-                    value = 'P'
+                    item = 'P'
                 elif i[0] == 'M':
-                    value = 'M'
+                    item = 'M'
                 elif i[0] == 'D':
-                    value = 'D'
+                    item = 'D'
                 else:
-                    value = 'X'
+                    item = 'X'
         else:
-            value = value[0]
+            item = item[0]
+        final_list.append(item)
+    df_item['a_final'] = final_list
+    return df_item
+
 
 
 '''
@@ -202,8 +215,8 @@ index_num = 1126
     return df_item'''
 
 #########################################################################
-df = df_standard
-index_num = 100
+#df = df_standard
+#index_num = 100
 def create_ptai_dict(df,index_num):
     row = index_num
 
@@ -261,6 +274,9 @@ def create_ptai_dict(df,index_num):
 
 #########################################################################
 
+
+
+
 one = create_ptai_dict(df_standard,285)
 pp = pprint.PrettyPrinter(indent=4)
 pp.pprint(one)
@@ -275,30 +291,47 @@ def batch_response(df, start, end):
         acc_item[one_item['id']] = one_item
     return acc_item
 #########################################################################
-ptai_dict_some = batch_response(df_standard,1,500)
+ptai_dict_some = batch_response(df_standard,1,100)
 #ptai_dict_all = batch_response(df_standard,1,1512)
 
-'''
 ### FUNCTION MERGE QUESTION DATABASE TO DICT
-def merge_score(ptai_dict,db_question):
-    df = db_question
-    for id in ptai_dict:
-        q_id = ptai_dict[id]['attribute']['ans_dict']['question_id']
-        add_is = df.at[q_id,'IS']
-        add_X = df.at[q_id,"X"]
-        add_L = df.at[q_id,"L"]
-        add_U = df.at[q_id,"U"]
-        #Assign value to PTAI Dict
-        ptai_dict[id]['attribute']['ans_dict']['IS'] = add_is
-        ptai_dict[id]['attribute']['ans_dict']['X'] = add_X
-        ptai_dict[id]['attribute']['ans_dict']['L'] = add_L
-        ptai_dict[id]['attribute']['ans_dict']['U'] = add_U
-    return ptai_dict
-#########################################################################
-''' #AVOID MERGE DICT
-#TEST FUNCTION
-#merged_dict = merge_score(ptai_dict_some,df_question_db)
+#Build function >> add variable
+df = df_question_db
+sc = score_db
 
+def merge_score(ptai_dict,df):
+    for id in ptai_dict:
+        ans_list = list(ptai_dict[id]['attribute']['ans_dict'].keys())
+        #Assign answer criteria to dict
+        for ans_id in ans_list:
+            q_id = ptai_dict[id]['attribute']['ans_dict'][ans_id]['question_id']
+            a_score = ptai_dict[id]['attribute']['ans_dict'][ans_id]['score']
+
+            add_is = df.at[q_id,'IS']
+            add_X = df.at[q_id,"X"]
+            add_L = df.at[q_id,"L"]
+            add_U = df.at[q_id,"U"]
+            #Calculate score section
+            if a_score != 'X'and add_X > 0:
+                a_pointcode = str(int(add_X)) + a_score
+                a_point = sc.loc[a_pointcode,'point']
+            else:
+                a_pointcode = '0X'
+                a_point = 0
+
+            #Assign value to PTAI Dict
+            ptai_dict[id]['attribute']['ans_dict'][ans_id]['IS'] = add_is
+            ptai_dict[id]['attribute']['ans_dict'][ans_id]['X'] = add_X
+            ptai_dict[id]['attribute']['ans_dict'][ans_id]['L'] = add_L
+            ptai_dict[id]['attribute']['ans_dict'][ans_id]['U'] = add_U
+            ptai_dict[id]['attribute']['ans_dict'][ans_id]['point'] = a_point
+
+    return ptai_dict
+
+#########################################################################
+#TEST FUNCTION
+merged_dict = merge_score(ptai_dict_some,df_question_db)
+pp.pprint(merged_dict)
 ### FUNCTION GROUPING AS STATION
 def get_station_set(ptai_dict):
     station_list = []
@@ -311,20 +344,8 @@ station_list = get_station_set(ptai_dict_some)
 len(station_list)
 
 ###############################################################################################
-#Set up score table
-score_db = pd.DataFrame(data=[100,100,100,55,60,70,0,20,30],
-                        columns=['point'],
-                        index=['4P','2P','1P','4M','2M','1M','4D','2D','1D'])
 
-#######################################################################################
-'''
-#Set up variable following Q_ID
-IS = df.at[q_id,'IS']
-X = df.at[q_id,"X"]
-L = df.at[q_id,"L"]
-U = df.at[q_id,"U"]
-R_all_oneStation =  dict_some.items()
-'''
+
 ##CALCULATION PART
 #Add station name
 dict = ptai_dict_some
@@ -346,271 +367,89 @@ for id in dict:
     for ans_id in ans_list:
         score_list.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
 
-for i,value in enumerate(score_list):
-    if value == None:
-        del(score_list[i])
+score_set = set(score_list)
 
 #############################################################################
-#GET SCORE FOR ONE RECORD
-rec_q = []
-rec_r = []
-dict = ptai_dict_some
-df = df_question_db
-id = '00100'
-rec_ans_list = list(dict[id]['attribute']['ans_dict'].keys())
-for ans_id in rec_ans_list:
-    rec_q.append(dict[id]['attribute']['ans_dict'][ans_id]['question_id'])
-    rec_r.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
+    #GET SCORE FOR ONE RECORD
+    #Input data
 
-#Import X score list
-rec_x = []
-for item in rec_q:
-    rec_x.append(df.at[item, "X"])
+    dict = ptai_dict_some
+    df = df_question_db
+    id = '00100'
 
-#Create list to keep transform answer to score format
-rec_score = []
-for i in range(len(rec_r)):
-    i = i - 1
-    if rec_r[i] != None:
-        if rec_x[i] == 4:
-            rec_score.append('4'+rec_r[i])
-        elif rec_x[i] == 2:
-            rec_score.append('2'+rec_r[i])
-        elif rec_x[i] == 1:
-            rec_score.append('1'+rec_r[i])
-    else:
-        pass
-
-Rpoint_total = 0
-Rpoint = 0
-Rpoint_count = 0
-for item in rec_score:
-    Rpoint_total += score_db.loc[item,'point']
-
-if len(rec_score) > 0:
-    Rpoint_count = len(rec_score)
-    Rpoint = round(Rpoint_total/Rpoint_count,2)
-else:
-    Rpoint = None
-    print("There  is no record for this R-Group")
-
-print("Station Name :" + str(station))
-print("R GROUP :" + str(r_group))
-print("Record ID :" +str(ans_id))
-print("Total score: " + str(Rpoint_total))
-print("Number of survey question: " + str(Rpoint_count))
-print("Average score :" + str(Rpoint))
-
-dict = ptai_dict_some
-id = '00100'
-
+#Get score list form dict
 def get_record_score(dict,id):
     rec_q = []
     rec_r = []
-    df = df_question_db
     rec_ans_list = list(dict[id]['attribute']['ans_dict'].keys())
     for ans_id in rec_ans_list:
         rec_q.append(dict[id]['attribute']['ans_dict'][ans_id]['question_id'])
         rec_r.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
 
-    # Import X score list
+    #Import X score list
     rec_x = []
     for item in rec_q:
         rec_x.append(df.at[item, "X"])
 
-    # Create list to keep transform answer to score format
+    #Create list to keep transform answer to score format
     rec_score = []
     for i in range(len(rec_r)):
         i = i - 1
         if rec_r[i] != None:
             if rec_x[i] == 4:
-                rec_score.append('4' + rec_r[i])
+                rec_score.append('4'+rec_r[i])
             elif rec_x[i] == 2:
-                rec_score.append('2' + rec_r[i])
+                rec_score.append('2'+rec_r[i])
             elif rec_x[i] == 1:
-                rec_score.append('1' + rec_r[i])
+                rec_score.append('1'+rec_r[i])
         else:
             pass
 
     Rpoint_total = 0
-    Rpoint = 0
-    Rpoint_count = 0
+    Rpoint_count = 1
     for item in rec_score:
-        Rpoint_total += score_db.loc[item, 'point']
+        if item[-1] != 'X':
+            print(item)
+            Rpoint_total += score_db.loc[item,'point']
+            Rpoint_count += 1
 
-    if len(rec_score) > 0:
-        Rpoint_count = len(rec_score)
-        Rpoint = round(Rpoint_total / Rpoint_count, 2)
-    else:
-        Rpoint = None
-        print("There  is no record for this R-Group")
+    Rpoint = round(Rpoint_total/Rpoint_count,2)
 
     print("Station Name :" + str(station))
     print("R GROUP :" + str(r_group))
-    print("Record ID :" + str(ans_id))
+    print("Record Answer:" +str(rec_score))
+    print("Record ID :" +str(ans_id))
     print("Total score: " + str(Rpoint_total))
     print("Number of survey question: " + str(Rpoint_count))
     print("Average score :" + str(Rpoint))
 
     return Rpoint
 
-#TEST FUCNTION
-rec_id_list = []
-rec_score_list = []
+dict = ptai_dict_some
+id = '00200'
+
+p = get_record_score(dict,id)
+
+id_list = []
 for id in dict:
-    rec_id_list.append(dict[id]['id'])
-    rec_score_list.append(get_record_score(ptai_dict_some,id))
+    id_list.append(dict[id]['id'])
 
-
-#############################################################################
-
-'''
-for id in dict:
-    if station in dict[id]['attribute']['station_name']:
-        if r_group in dict[id]['attribute']['accessibility_group']:
-            ans_list = list(dict[id]['attribute']['ans_dict'].keys())
-            print(r_group)
-            for ans_id in ans_list:
-                qlist.append(dict[id]['attribute']['ans_dict'][ans_id]['question_id'])
-                rlist.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
-        else:
-            pass
-    else:
-        pass
-
-#GET SCORE LIST FORM ONE R_ID
-def item_score(dict,station,r_group):
-    qlist = []
-    rlist = []      #Collect
-    item_list = []  #Collect survey item
-
-    for id in dict:
-        if station in dict[id]['attribute']['station_name']:
-            if r_group in dict[id]['attribute']['accessibility_group']:
-                ans_list = list(dict[id]['attribute']['ans_dict'].keys())
-                print(r_group)
-                for ans_id in ans_list:
-                    qlist.append(dict[id]['attribute']['ans_dict'][ans_id]['question_id'])
-                    rlist.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
-            else:
-                pass
-        else:
-            pass
-    #Create X data list to match with Answer
-    xlist_stn = []
-    for item in qlist:
-        xlist_stn.append(df.at[item, "X"])
-    #Create list to keep transform answer to score format
-    stn_r_score = []
-    for i in range(len(rlist)):
-        if rlist[i] != None:
-            if xlist_stn[i] == 4:
-                stn_r_score.append('4'+rlist[i])
-            elif xlist_stn[i] == 2:
-                stn_r_score.append('2'+rlist[i])
-            elif xlist_stn[i] == 1:
-                stn_r_score.append('1'+rlist[i])
-            else:
-                pass
-        else:
-            pass
-
-    Rpoint_total = 0
-    Rpoint = 0
-    Rpoint_count = 0
-    for item in stn_r_score:
-        Rpoint_total += score_db.loc[item,'point']
-
-    if len(stn_r_score) > 0:
-        Rpoint_count = len(stn_r_score)
-        Rpoint = Rpoint_total/Rpoint_count
-    else:
-        Rpoint = None
-        print("There  is no record for this R-Group")
-
-    print("Station Name :" + str(station))
-    print("R GROUP :" + str(r_group))
-    print("Total score: " + str(Rpoint_total))
-    print("Number of survey question: " + str(Rpoint_count))
-    print(Rpoint)
-
-    return Rpoint
-'''
-
-#GET SCORE SUMMARY FOR ONE RECORD
-qlist = []
-rlist = []      #Collect
-item_list = []  #Collect survey item
-id 
-
-    for id in dict:
-        if station in dict[id]['attribute']['station_name']:
-            if r_group in dict[id]['attribute']['accessibility_group']:
-                ans_list = list(dict[id]['attribute']['ans_dict'].keys())
-                print(r_group)
-                for ans_id in ans_list:
-                    qlist.append(dict[id]['attribute']['ans_dict'][ans_id]['question_id'])
-                    rlist.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
-            else:
-                pass
-        else:
-            pass
-    #Create X data list to match with Answer
-    xlist_stn = []
-    for item in qlist:
-        xlist_stn.append(df.at[item, "X"])
-    #Create list to keep transform answer to score format
-    stn_r_score = []
-    for i in range(len(rlist)):
-        if rlist[i] != None:
-            if xlist_stn[i] == 4:
-                stn_r_score.append('4'+rlist[i])
-            elif xlist_stn[i] == 2:
-                stn_r_score.append('2'+rlist[i])
-            elif xlist_stn[i] == 1:
-                stn_r_score.append('1'+rlist[i])
-            else:
-                pass
-        else:
-            pass
-
-    Rpoint_total = 0
-    Rpoint = 0
-    Rpoint_count = 0
-    for item in stn_r_score:
-        Rpoint_total += score_db.loc[item,'point']
-
-    if len(stn_r_score) > 0:
-        Rpoint_count = len(stn_r_score)
-        Rpoint = Rpoint_total/Rpoint_count
-    else:
-        Rpoint = None
-        print("There  is no record for this R-Group")
-
-    print("Station Name :" + str(station))
-    print("R GROUP :" + str(r_group))
-    print("Total score: " + str(Rpoint_total))
-    print("Number of survey question: " + str(Rpoint_count))
-    print(Rpoint)
+point_list = []
+for id in id_list:
+    point_list.append(get_record_score(dict,id))
 
 
 #CALCULATE FOR ALL GROUP IN ONE STATION
 stn_score_dict = {}
 save = {}
 
-for i in range(17):
-    i = 16
-    r_group = r_active_list[i]
-    #print(r_group)
-    print(item_score(dict,station,r_group))
-
 
 ##_EXPORT to JSON
 def export2json(dict,filename):
     with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
-        json.dump(dict, f, ensure_ascii=False, indent=4)
+        json.dump(dict,f, ensure_ascii=False, indent=4)
 
-export2json(ptai_dict_some,"dictsome2")
+export2json(ptai_dict_some,"dictsome3")
 
+export2json(merged_dict,"dict_test")
 
-# EXPORT QUESTION LIST
