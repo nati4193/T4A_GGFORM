@@ -4,6 +4,8 @@
 import pandas as pd
 import json
 import pprint
+import numpy as np
+
 print("Pandas version", pd.__version__)
 
 ###FUNCTION :: Import Question Database
@@ -294,8 +296,7 @@ def batch_response(df, start, end):
 ptai_dict_some = batch_response(df_standard,1,100)
 #ptai_dict_all = batch_response(df_standard,1,1512)
 
-### FUNCTION MERGE QUESTION DATABASE TO DICT
-#Build function >> add variable
+### FUNCTION MERGE QUESTION and SCORE DATABASE TO DICT
 df = df_question_db
 sc = score_db
 
@@ -332,6 +333,8 @@ def merge_score(ptai_dict,df):
 #TEST FUNCTION
 merged_dict = merge_score(ptai_dict_some,df_question_db)
 pp.pprint(merged_dict)
+
+#########################################################################
 ### FUNCTION GROUPING AS STATION
 def get_station_set(ptai_dict):
     station_list = []
@@ -340,108 +343,79 @@ def get_station_set(ptai_dict):
     stn_set = sorted(list(set(station_list)))
     return stn_set
 #########################################################################
-station_list = get_station_set(ptai_dict_some)
+station_list = get_station_set(merged_dict)
 len(station_list)
 
 ###############################################################################################
+'''
+Query data form dict
+- Snippet for get data
+    for id in ptai_dict:
+        ans_list = list(ptai_dict[id]['attribute']['ans_dict'].keys())
+        #Assign answer criteria to dict
+        for ans_id in ans_list:
+            itemX = ptai_dict[id]['attribute']['ans_dict'][ans_id]['X']
+- Request variable
+    station name : ptai_dict[id]['attribute']['station_name']
+    R group      : ptai_dict[id]['attribute']['accessibility_group']
+    L            : ptai_dict[id]['attribute']['ans_dict'][ans_id]['L']
+    U type       : ptai_dict[id]['attribute']['ans_dict'][ans_id]['U']
+    point        : ptai_dict[id]['attribute']['ans_dict'][ans_id]['point']
+'''
+#FUNCTION FOR SEARCHING KEY IN DICT
+def recursive_lookup(k, d):
+    if k in d: return d[k]
+    for v in d.values():
+        if isinstance(v, dict):
+            a = recursive_lookup(k, v)
+            if a is not None: return a
+    return None
 
+#GET AVERAGE ONE RECORD POINT
+rec_id = '00025'
+lv = 1
+dict = merged_dict
 
-##CALCULATION PART
-#Add station name
-dict = ptai_dict_some
-df = df_question_db
-i = 2
-station = station_list[i]
-r_group = "R03"
-print(station)
-
-#Get R Active group
-r_active_list = []
-for id in dict:
-    r_active_list.append(dict[id]['attribute']['accessibility_group'])
-r_active_list = sorted(set(r_active_list))
-
-score_list = []
-for id in dict:
-    ans_list = list(dict[id]['attribute']['ans_dict'].keys())
-    for ans_id in ans_list:
-        score_list.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
-
-score_set = set(score_list)
-
-#############################################################################
-    #GET SCORE FOR ONE RECORD
-    #Input data
-
-    dict = ptai_dict_some
-    df = df_question_db
-    id = '00100'
-
-#Get score list form dict
-def get_record_score(dict,id):
-    rec_q = []
-    rec_r = []
-    rec_ans_list = list(dict[id]['attribute']['ans_dict'].keys())
-    for ans_id in rec_ans_list:
-        rec_q.append(dict[id]['attribute']['ans_dict'][ans_id]['question_id'])
-        rec_r.append(dict[id]['attribute']['ans_dict'][ans_id]['score'])
-
-    #Import X score list
-    rec_x = []
-    for item in rec_q:
-        rec_x.append(df.at[item, "X"])
-
-    #Create list to keep transform answer to score format
-    rec_score = []
-    for i in range(len(rec_r)):
-        i = i - 1
-        if rec_r[i] != None:
-            if rec_x[i] == 4:
-                rec_score.append('4'+rec_r[i])
-            elif rec_x[i] == 2:
-                rec_score.append('2'+rec_r[i])
-            elif rec_x[i] == 1:
-                rec_score.append('1'+rec_r[i])
+def get_item_point(rec_id,lv,merged_dict):
+    a1 = recursive_lookup(rec_id,merged_dict)
+    a2 = recursive_lookup('ans_dict',a1)
+    a_list = list(a2.keys())
+    point_list = []
+    count_list = []
+    for item in a_list:
+        a3 = recursive_lookup(item,a2)
+        s = recursive_lookup('score',a3)
+        p = recursive_lookup('point',a3)
+        l = recursive_lookup('L',a3)
+        if s != 'X':
+            if lv <= l :
+                point_list.append(p)
+                count_list.append(s)
+            else:
+                point_list.append(0)
         else:
             pass
+    qcount = len(point_list)
+    pcount = sum(map(lambda x : x == 'P', count_list))
+    mcount = sum(map(lambda x : x == 'M', count_list))
+    dcount = sum(map(lambda x : x == 'D', count_list))
+    point_rec_avg = np.average(point_list)
+    point_rec_total = np.sum(point_list)
 
-    Rpoint_total = 0
-    Rpoint_count = 1
-    for item in rec_score:
-        if item[-1] != 'X':
-            print(item)
-            Rpoint_total += score_db.loc[item,'point']
-            Rpoint_count += 1
+    d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
+    df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
 
-    Rpoint = round(Rpoint_total/Rpoint_count,2)
+    return df_rec
 
-    print("Station Name :" + str(station))
-    print("R GROUP :" + str(r_group))
-    print("Record Answer:" +str(rec_score))
-    print("Record ID :" +str(ans_id))
-    print("Total score: " + str(Rpoint_total))
-    print("Number of survey question: " + str(Rpoint_count))
-    print("Average score :" + str(Rpoint))
+get_item_point('00072',1,merged_dict)['AVG POINT']
 
-    return Rpoint
+#GET AVERAGE RX Point for Station
+station = station_list[0]
+rgroup = 'R03'
+lv = 1
+dict = merged_dict
 
-dict = ptai_dict_some
-id = '00200'
-
-p = get_record_score(dict,id)
-
-id_list = []
-for id in dict:
-    id_list.append(dict[id]['id'])
-
-point_list = []
-for id in id_list:
-    point_list.append(get_record_score(dict,id))
-
-
-#CALCULATE FOR ALL GROUP IN ONE STATION
-stn_score_dict = {}
-save = {}
+a1 = recursive_lookup('station_name',merged_dict)
 
 
 ##_EXPORT to JSON
