@@ -3,7 +3,6 @@
 #IMPORT Library
 import pandas as pd
 import json
-import pprint
 import numpy as np
 
 print("Pandas version", pd.__version__)
@@ -62,7 +61,7 @@ for row in df_formquestion['q_code']:
     else:
         add_question.append(row)
 
-## Import station database
+##Import station database
 path_station = 'db\\m_station_db.csv'
 
 ###FUNCTION :: Import station db
@@ -74,12 +73,11 @@ def get_station_db(path):
     return df_stn
 ###################################################################################################################
 #Set up score table
-score_db = pd.DataFrame(data=[100,100,100,55,60,70,0,20,30],
+score_db = pd.DataFrame(data=[100, 100, 100, 55,60,70,0,20,30],
                         columns=['point'],
                         index=['4P','2P','1P','4M','2M','1M','4D','2D','1D'])
 
 ###################################################################################################################
-
 df_stn_db = get_station_db(path_station)
 
 # FUNCTION :: Transform google form's header response to standard pattern
@@ -167,7 +165,6 @@ def get_df_response(df,index_num):
     df_item['a_final'] = final_list
     return df_item
 
-
 ###################################################################################################################
 #df = df_standard
 #index_num = 100
@@ -228,10 +225,6 @@ def create_ptai_dict(df,index_num):
 
 ###################################################################################################################
 
-one = create_ptai_dict(df_standard,285)
-pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(one)
-
 ###FUNCTION :: Get batch responses following index_num range
 def batch_response(df, start, end):
     acc_item = {}
@@ -281,7 +274,6 @@ def merge_score(ptai_dict,df):
 #########################################################################
 #TEST FUNCTION
 merged_dict = merge_score(ptai_dict_some,df_question_db)
-pp.pprint(merged_dict)
 
 ##_EXPORT Database to JSON
 def export2json(dict,filename):
@@ -299,7 +291,7 @@ def get_stationform_set(ptai_dict):
         station_list.append(ptai_dict[id]['attribute']['station_name'])
     stn_set = sorted(list(set(station_list)))
     return stn_set
-#########################################################################
+
 station_list = get_stationform_set(merged_dict)
 len(station_list)
 
@@ -334,6 +326,7 @@ lv = 3
 option = 'Dataframe'
 '''
 
+#FUNCTION >> Get Ri Point for each R-Group in a Station
 def get_item_point(rec_id,lv,option):
     a1 = recursive_lookup(rec_id,merged_dict)
     a2 = recursive_lookup('ans_dict',a1)
@@ -372,10 +365,7 @@ def get_item_point(rec_id,lv,option):
     else:
         return print("Input option for get data")
 
-d = get_item_point('00077',3,'dataframe')
-
-#GET AVERAGE RX Point for Station
-
+#FUNCTION >> GET AVERAGE RX Point for Station
 def get_rx_point(station,rgroup,lv,option):
     rg = rgroup
     a_rx_list = [] # collect all rec_id in Rx
@@ -404,17 +394,7 @@ def get_rx_point(station,rgroup,lv,option):
     elif option == 'dataframe':
         return point_rx_avg
 
-#TEST FUNCTION
-station = station_list[0]
-get_rx_point(station,'R05',3,'point')
-
 ### FUNCTION >> Find IU_point for station each R_Group
-
-station = station_list[0]
-rg = 'R03'
-utype = 'NW'
-lv = 1
-
 def get_iu_point(station,rg,utype,lv):
 
     a_rq_list = [] # collect all rec_id in Rx
@@ -452,15 +432,9 @@ def get_iu_point(station,rg,utype,lv):
         return iu_point
 
 #TEST FUNCTION
-station = station_list[0]
 get_iu_point(station,'R05','AA',1)
 
 ### FUNCTION >> Find I-point for station each R_Group
-station = station_list[0]
-rg = 'R05'
-lv = 1
-
-
 def get_irx_point(station,rg,lv):
     u_list = []
     i_list = []
@@ -496,6 +470,7 @@ def get_irx_point(station,rg,lv):
 #TEST FUNCTION
 get_irx_point(station,'R03',1)
 
+### FUNCTION >> GET Overall point for each R-Group in a station
 def get_overall_rpoint(station,rg,lv,option):
     oa = get_rx_point(station,rg,lv,'point')
     oi = get_irx_point(station,rg,lv)
@@ -507,8 +482,11 @@ def get_overall_rpoint(station,rg,lv,option):
     elif option == 'list':
         return overall_list
 
+#TEST FUNCTION
 get_overall_rpoint(station,'R01',1,'point')
 get_overall_rpoint(station,'R01',1,'list')
+
+
 
 
 
