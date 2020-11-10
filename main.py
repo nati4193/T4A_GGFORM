@@ -524,8 +524,8 @@ def get_irx_point(station,rg,lv):
 #TEST FUNCTION
 get_irx_point(station,'R03',1)
 
-### FUNCTION >> GET Overall point for each R-Group in a station
-def get_overall_rpoint(station,rg,lv,option):
+### FUNCTION >> GET Overall point (OAP) for each R-Group in a station
+def get_oap(station,rg,lv,option):
     oa = get_rx_point(station,rg,lv,'point')
     oi = get_irx_point(station,rg,lv)
     overall = (oa + oi)/2
@@ -537,12 +537,11 @@ def get_overall_rpoint(station,rg,lv,option):
         return overall_list
 
 #TEST FUNCTION
-get_overall_rpoint(station,'R01',1,'point')
-get_overall_rpoint(station,'R01',1,'list')
+get_oap(station,'R01',1,'point')
+get_oap(station,'R01',1,'list')
 get_rx_point(station,'R01',1,'list')
 
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
-
 def get_af_table(station,lv):
     rg_set = get_rgform_set(df_standard)
     af_df = pd.DataFrame(columns=['station','rg','af_point'])
@@ -553,7 +552,6 @@ def get_af_table(station,lv):
     return af_df
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
-
 def get_an_table(station,lv,option):
     utype_set = get_utype_set()
     an_df = pd.DataFrame(columns=['station','U type','an_point'])
@@ -571,4 +569,5 @@ def get_an_table(station,lv,option):
     elif option == 'point':
         return  oup
 
+#TEST FUNCTION
 get_an_table(station,1,'dataframe')
