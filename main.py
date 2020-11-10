@@ -514,11 +514,14 @@ def get_irx_point(station,rg,lv):
         if iu != None:
             i_point_list.append(iu)
         else: pass
-
-    i_rx_point = round(np.average(i_point_list),2) #Get i point for each R access need
-    i_rx_total = np.sum(i_point_list)
+    if len(i_point_list) > 0:
+        i_rx_point = round(np.average(i_point_list),2) #Get i point for each R access need
+        i_rx_total = np.sum(i_point_list)
+    else:
+        i_rx_point = 0
     count = len(i_point_list)
     print(i_rx_point,i_rx_total,count)
+
     return i_rx_point
 
 #TEST FUNCTION
@@ -536,23 +539,33 @@ def get_oap(station,rg,lv,option):
     elif option == 'list':
         return overall_list
 
+
 #TEST FUNCTION
 get_oap(station,'R01',1,'point')
 get_oap(station,'R01',1,'list')
 get_rx_point(station,'R01',1,'list')
 
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
-def get_af_table(station,lv):
+def get_af_table(station,lv,option):
     rg_set = get_rgform_set(df_standard)
     af_df = pd.DataFrame(columns=['station','rg','af_point'])
     for rg in rg_set:
         af_list = []
         af = get_rx_point(station,rg,lv,'list')
         af_df.loc[len(af_df)] = af
-    return af_df
+
+    oap_list = af_df['af_point'].dropna().astype(int).tolist()
+    oap = np.average(oap_list)
+
+    if option == 'dataframe':
+        return af_df
+    elif option == 'point':
+        return oap
+
+get_af_table(station,1,'point')
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
-def get_an_table(station,lv,option):
+def get_up_table(station,lv,option):
     utype_set = get_utype_set()
     an_df = pd.DataFrame(columns=['station','U type','an_point'])
     for u in utype_set:
@@ -570,4 +583,19 @@ def get_an_table(station,lv,option):
         return  oup
 
 #TEST FUNCTION
-get_an_table(station,1,'dataframe')
+get_up_table(station,1,'dataframe')
+
+#TEST ALL STATION
+
+    df_oap_all = pd.DataFrame()
+    df_oup_all = pd.DataFrame()
+
+    for stn in station_list:
+        df_oap = get_af_table(stn,1,'dataframe')
+        df_oup = get_up_table(stn,1,'dataframe')
+
+        df_oap_all = df_oap_all.append(df_oap,ignore_index=True)
+        df_oup_all = df_oup_all.append(df_oup,ignore_index=True)
+
+
+
