@@ -283,16 +283,24 @@ def merge_score(ptai_dict,df):
 merged_dict = merge_score(ptai_dict_some,df_question_db)
 pp.pprint(merged_dict)
 
+##_EXPORT Database to JSON
+def export2json(dict,filename):
+    with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
+        json.dump(dict,f, ensure_ascii=False, indent=4)
+
+#export2json(ptai_dict_some,"dictsome3")
+#export2json(merged_dict,"dict_test")
+
 #########################################################################
 ### FUNCTION GROUPING AS STATION
-def get_station_set(ptai_dict):
+def get_stationform_set(ptai_dict):
     station_list = []
     for id in ptai_dict:
         station_list.append(ptai_dict[id]['attribute']['station_name'])
     stn_set = sorted(list(set(station_list)))
     return stn_set
 #########################################################################
-station_list = get_station_set(merged_dict)
+station_list = get_stationform_set(merged_dict)
 len(station_list)
 
 ###############################################################################################
@@ -367,11 +375,6 @@ def get_item_point(rec_id,lv,option):
 d = get_item_point('00077',3,'dataframe')
 
 #GET AVERAGE RX Point for Station
-station = station_list[0]
-    rgroup = 'R09'
-    lv = 3
-    option = 'point'
-
 
 def get_rx_point(station,rgroup,lv,option):
     rg = rgroup
@@ -405,13 +408,13 @@ def get_rx_point(station,rgroup,lv,option):
 station = station_list[0]
 get_rx_point(station,'R05',3,'point')
 
-#Find IU_point for station
-'''
+### FUNCTION >> Find IU_point for station each R_Group
+
 station = station_list[0]
 rg = 'R03'
 utype = 'NW'
 lv = 1
-'''
+
 def get_iu_point(station,rg,utype,lv):
 
     a_rq_list = [] # collect all rec_id in Rx
@@ -425,7 +428,7 @@ def get_iu_point(station,rg,utype,lv):
        else:
            pass
 
-    for id in a_rx_list:
+    for id in a_rq_list:
         ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
         for ans_id in ans_list:
 
@@ -435,7 +438,6 @@ def get_iu_point(station,rg,utype,lv):
             l = merged_dict[id]['attribute']['ans_dict'][ans_id]['L']
 
             if u_id == utype and u_score != 'X' and l <= lv:
-                a_rq_list.append(u_score)
                 a_rq_score.append(u_point)
                 print(ans_id,u_score,u_point,u_id,l)
 
@@ -449,17 +451,64 @@ def get_iu_point(station,rg,utype,lv):
         print("iu_point : " + str(iu_point))
         return iu_point
 
-get_iu_point(station,'R03','NW',2)
+#TEST FUNCTION
+station = station_list[0]
+get_iu_point(station,'R05','AA',1)
+
+### FUNCTION >> Find I-point for station each R_Group
+station = station_list[0]
+rg = 'R05'
+lv = 1
 
 
+def get_irx_point(station,rg,lv):
+    u_list = []
+    i_list = []
+
+    for id in merged_dict:
+        si = merged_dict[id]['attribute']['station_name']
+        ri = merged_dict[id]['attribute']['accessibility_group']
+        if si == station and ri == rg:
+            i_list.append(id)
+        else:
+            pass
+
+        for id in i_list:
+            ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
+            for ans_id in ans_list:
+                ui = merged_dict[id]['attribute']['ans_dict'][ans_id]['U']
+                u_list.append(ui)
+    u_set = set(u_list)
+    i_point_list = []
+
+    for u in u_set:
+        iu = get_iu_point(station,rg,u,lv)
+        if iu != None:
+            i_point_list.append(iu)
+        else: pass
+
+    i_rx_point = round(np.average(i_point_list),2) #Get i point for each R access need
+    i_rx_total = np.sum(i_point_list)
+    count = len(i_point_list)
+    print(i_rx_point,i_rx_total,count)
+    return i_rx_point
+
+#TEST FUNCTION
+get_irx_point(station,'R03',1)
+
+def get_overall_rpoint(station,rg,lv,option):
+    oa = get_rx_point(station,rg,lv,'point')
+    oi = get_irx_point(station,rg,lv)
+    overall = (oa + oi)/2
+    print(station,rg,lv,overall)
+    overall_list = [station,rg,lv,oa,oi,overall]
+    if option == 'point':
+        return overall
+    elif option == 'list':
+        return overall_list
+
+get_overall_rpoint(station,'R01',1,'point')
+get_overall_rpoint(station,'R01',1,'list')
 
 
-##_EXPORT to JSON
-def export2json(dict,filename):
-    with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
-        json.dump(dict,f, ensure_ascii=False, indent=4)
-
-export2json(ptai_dict_some,"dictsome3")
-
-export2json(merged_dict,"dict_test")
 
