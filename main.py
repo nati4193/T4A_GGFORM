@@ -406,7 +406,7 @@ def get_rx_point(station,rgroup,lv,option):
         return point_rx_list
 
 ### FUNCTION >> Find IU_point for station each R_Group
-def get_iu_point(station,rg,utype,lv,option):
+def get_iu_point(station,rg,utype,lv):
 
     a_rq_list = [] # collect all rec_id in Rx
     a_rq_score = []
@@ -437,6 +437,7 @@ def get_iu_point(station,rg,utype,lv,option):
 
     if len(a_rq_score) == 0:
         print("There is no this type of access need")
+        iu_point = None
     else:
         iu_point = round(np.average(a_rq_score),2)
         print("iu_point : " + str(iu_point))
@@ -444,12 +445,10 @@ def get_iu_point(station,rg,utype,lv,option):
     return iu_point
 
 ### FUNCTION >> Find IU_point for a Station group bu User Access Need
-station = station_list[0]
-utype = 'NW'
-lv = 1
 
 def get_up_point(station,utype,lv):
-
+    a_rq_list = []
+    a_rq_score = []
     u_list = []
     u_score = []
 
@@ -478,6 +477,7 @@ def get_up_point(station,utype,lv):
 
     if len(a_rq_score) == 0:
         print("There is no this type of access need")
+        up_point = None
     else:
         up_point = round(np.average(a_rq_score),2)
         print("iu_point : " + str(up_point))
@@ -487,8 +487,6 @@ def get_up_point(station,utype,lv):
 # >>>>> ASSIGN STATION <<<<<
 station = station_list[10]
 
-#TEST FUNCTION
-get_iu_point(station,'R05','AA',1)
 
 ### FUNCTION >> Find I-point for station each R_Group
 def get_irx_point(station,rg,lv):
@@ -545,7 +543,6 @@ get_rx_point(station,'R01',1,'list')
 
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
 
-
 def get_af_table(station,lv):
     rg_set = get_rgform_set(df_standard)
     af_df = pd.DataFrame(columns=['station','rg','af_point'])
@@ -555,9 +552,9 @@ def get_af_table(station,lv):
         af_df.loc[len(af_df)] = af
     return af_df
 
-
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
-def get_an_table(station,lv):
+
+def get_an_table(station,lv,option):
     utype_set = get_utype_set()
     an_df = pd.DataFrame(columns=['station','U type','an_point'])
     for u in utype_set:
@@ -565,10 +562,13 @@ def get_an_table(station,lv):
         an = get_up_point(station,u,lv)
         an_list = [station,u,an]
         an_df.loc[len(an_df)] = an_list
-    return an_df
 
+    oup_list = an_df['an_point'].dropna().astype(int).tolist()
+    oup = np.average(oup_list)
 
+    if option == 'dataframe':
+        return an_df
+    elif option == 'point':
+        return  oup
 
-
-
-
+get_an_table(station,1,'dataframe')
