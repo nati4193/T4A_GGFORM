@@ -114,11 +114,14 @@ def transform_header(df):  ###Transform_header dataframe to English format
 #Transform dataframe
 df_standard = transform_header(df_form)
 
-df = df_standard
-
 def get_rgform_set(df):
     rg_set = sorted(set(list(df['r_id'])))
     return rg_set
+
+def get_utype_set(df=df_question_db):
+    utype_set = sorted(set(list(df['U'])))
+    return utype_set
+
 
 
 ###FUNCTION :: Get one response following index_num with answer detail
@@ -395,14 +398,15 @@ def get_rx_point(station,rgroup,lv,option):
     point_rx_total = np.sum(a_rx_score)
     print(a_rx_list,a_rx_score)
     print(point_rx_total,point_rx_avg)
+    point_rx_list = [station,rgroup,point_rx_avg]
 
     if option == 'point':
         return point_rx_avg
-    elif option == 'dataframe':
-        return point_rx_avg
+    elif option == 'list':
+        return point_rx_list
 
 ### FUNCTION >> Find IU_point for station each R_Group
-def get_iu_point(station,rg,utype,lv):
+def get_iu_point(station,rg,utype,lv,option):
 
     a_rq_list = [] # collect all rec_id in Rx
     a_rq_score = []
@@ -436,7 +440,49 @@ def get_iu_point(station,rg,utype,lv):
     else:
         iu_point = round(np.average(a_rq_score),2)
         print("iu_point : " + str(iu_point))
-        return iu_point
+
+    return iu_point
+
+### FUNCTION >> Find IU_point for a Station group bu User Access Need
+station = station_list[0]
+utype = 'NW'
+lv = 1
+
+def get_up_point(station,utype,lv):
+
+    u_list = []
+    u_score = []
+
+    for id in merged_dict:
+       si = merged_dict[id]['attribute']['station_name']
+       if si == station:
+           a_rq_list.append(id)
+       else:
+           pass
+
+    for id in a_rq_list:
+        ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
+        for ans_id in ans_list:
+
+            u_score = merged_dict[id]['attribute']['ans_dict'][ans_id]['score']
+            u_point = merged_dict[id]['attribute']['ans_dict'][ans_id]['point']
+            u_id = merged_dict[id]['attribute']['ans_dict'][ans_id]['U']
+            l = merged_dict[id]['attribute']['ans_dict'][ans_id]['L']
+
+            if u_id == utype and u_score != 'X' and l <= lv:
+                a_rq_score.append(u_point)
+                print(ans_id,u_score,u_point,u_id,l)
+
+            else:
+                pass
+
+    if len(a_rq_score) == 0:
+        print("There is no this type of access need")
+    else:
+        up_point = round(np.average(a_rq_score),2)
+        print("iu_point : " + str(up_point))
+
+    return up_point
 
 # >>>>> ASSIGN STATION <<<<<
 station = station_list[10]
@@ -495,8 +541,31 @@ def get_overall_rpoint(station,rg,lv,option):
 #TEST FUNCTION
 get_overall_rpoint(station,'R01',1,'point')
 get_overall_rpoint(station,'R01',1,'list')
+get_rx_point(station,'R01',1,'list')
 
-### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame
+### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
+
+
+def get_af_table(station,lv):
+    rg_set = get_rgform_set(df_standard)
+    af_df = pd.DataFrame(columns=['station','rg','af_point'])
+    for rg in rg_set:
+        af_list = []
+        af = get_rx_point(station,rg,lv,'list')
+        af_df.loc[len(af_df)] = af
+    return af_df
+
+
+### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
+def get_an_table(station,lv):
+    utype_set = get_utype_set()
+    an_df = pd.DataFrame(columns=['station','U type','an_point'])
+    for u in utype_set:
+        an_list = []
+        an = get_up_point(station,u,lv)
+        an_list = [station,u,an]
+        an_df.loc[len(an_df)] = an_list
+    return an_df
 
 
 
