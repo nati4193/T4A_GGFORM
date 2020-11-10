@@ -114,6 +114,13 @@ def transform_header(df):  ###Transform_header dataframe to English format
 #Transform dataframe
 df_standard = transform_header(df_form)
 
+df = df_standard
+
+def get_rgform_set(df):
+    rg_set = sorted(set(list(df['r_id'])))
+    return rg_set
+
+
 ###FUNCTION :: Get one response following index_num with answer detail
 #df = df_standard
 #index_num = 1126
@@ -235,7 +242,7 @@ def batch_response(df, start, end):
         acc_item[one_item['id']] = one_item
     return acc_item
 ###################################################################################################################
-ptai_dict_some = batch_response(df_standard,1,100)
+ptai_dict_some = batch_response(df_standard,1,1512)
 #ptai_dict_all = batch_response(df_standard,1,1512)
 
 ### FUNCTION MERGE QUESTION and SCORE DATABASE TO DICT
@@ -267,7 +274,7 @@ def merge_score(ptai_dict,df):
             ptai_dict[id]['attribute']['ans_dict'][ans_id]['X'] = add_X
             ptai_dict[id]['attribute']['ans_dict'][ans_id]['L'] = add_L
             ptai_dict[id]['attribute']['ans_dict'][ans_id]['U'] = add_U
-            ptai_dict[id]['attribute']['ans_dict'][ans_id]['point'] = a_point
+            ptai_dict[id]['attribute']['ans_dict'][ans_id]['point'] = int(a_point)
 
     return ptai_dict
 
@@ -281,7 +288,7 @@ def export2json(dict,filename):
         json.dump(dict,f, ensure_ascii=False, indent=4)
 
 #export2json(ptai_dict_some,"dictsome3")
-#export2json(merged_dict,"dict_test")
+export2json(merged_dict,"PTAI_DB")
 
 #########################################################################
 ### FUNCTION GROUPING AS STATION
@@ -431,6 +438,9 @@ def get_iu_point(station,rg,utype,lv):
         print("iu_point : " + str(iu_point))
         return iu_point
 
+# >>>>> ASSIGN STATION <<<<<
+station = station_list[10]
+
 #TEST FUNCTION
 get_iu_point(station,'R05','AA',1)
 
@@ -485,6 +495,9 @@ def get_overall_rpoint(station,rg,lv,option):
 #TEST FUNCTION
 get_overall_rpoint(station,'R01',1,'point')
 get_overall_rpoint(station,'R01',1,'list')
+
+### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame
+
 
 
 
