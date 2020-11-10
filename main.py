@@ -26,7 +26,7 @@ def get_response(url):
     excel_url = url.replace('edit', EXCEL_FORMAT)
     df = pd.read_excel(excel_url, encoding='unicode_escape')
     return df
-#########################################################################
+###################################################################################################################
 # Import response data
 form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
 df_form = get_response(form_url)
@@ -49,8 +49,7 @@ def get_formquestion(df):
     question_df['q_name'] = split_table[1]
     question_df.sort_values(by=['q_code'], inplace=True)
     return question_df
-#########################################################################
-
+###################################################################################################################
 ##Get Question list
 df_formquestion = get_formquestion(df_form)
 df_formquestion.to_csv('output/formquestion.csv')
@@ -73,13 +72,13 @@ def get_station_db(path):
     df_stn = df_stn.rename(columns={"name_th": "stn_name_th"})
     df_stn.info()
     return df_stn
-#########################################################################
+###################################################################################################################
 #Set up score table
 score_db = pd.DataFrame(data=[100,100,100,55,60,70,0,20,30],
                         columns=['point'],
                         index=['4P','2P','1P','4M','2M','1M','4D','2D','1D'])
 
-#######################################################################################
+###################################################################################################################
 
 df_stn_db = get_station_db(path_station)
 
@@ -113,7 +112,7 @@ def transform_header(df):  ###Transform_header dataframe to English format
     print(df['r_id'])
 
     return df
-#########################################################################
+###################################################################################################################
 #Transform dataframe
 df_standard = transform_header(df_form)
 
@@ -169,54 +168,7 @@ def get_df_response(df,index_num):
     return df_item
 
 
-
-'''
-
-###FUNCTION :: Get one response following index_num with answer detail
-df = df_standard
-index_num = 1126
-#def get_df_response(df,index_num):
-    r_group = df.loc[index_num, 'r_id']                             # Get r_id group for selecting column
-    all_ans = df.loc[index_num, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
-    df_item = all_ans.to_frame()
-    df_item['Q_ID'] = df_item.index
-    df_item['a_trim'] = None
-    df_item['a_final'] = None
-    df_item.rename(columns={index_num:'full_res'},inplace = True)
-    item_list = []
-    item_list = df_item['full_res'].tolist()
-    ans_list = []
-    for item in item_list:
-        #if type(item) != float:                # Check value in cell is None?
-            if str(item).count(':') >= 1:           # If not null -> Find one or multiple choice answer
-                if str(item).count(':') > 1:
-                    item_split = str(item).split(", ")
-                    ans_list.append(item_split)    #Separate Multiple choice to one value with comma
-                else:
-                    ans_list.append(str(item))
-                    
-                    
-                trim_list = []                 #Set List for get trimmed answer
-                for value in ans_list:         #Looping member in list for trimming
-                    print(value)
-                   if str(value)[0:1] == "P" or "M" or "D":
-                       col = 2
-                       trim_value = str(value)[0:3]              #Trimming answer
-                       trim_list.append(trim_value)              #Join to previoues answer
-                       df_item.iat[row,col] = trim_list          #Return trimmed answer back
-                       col = 3
-                       final_value = str(value)[0]               #LAST score [P,M,D,X] only
-                       df_item.iat[row,col] = final_value        #Return trimmed answer back
-                   else:
-                       df_item.iat[row, col] = "X"
-            else:
-                pass
-        else:
-            df_item.iat[row,col] = "X"                        #Return NUll for blank answer
-    print(df_item)
-    return df_item'''
-
-#########################################################################
+###################################################################################################################
 #df = df_standard
 #index_num = 100
 def create_ptai_dict(df,index_num):
@@ -274,10 +226,7 @@ def create_ptai_dict(df,index_num):
         }
     return acc_item
 
-#########################################################################
-
-
-
+###################################################################################################################
 
 one = create_ptai_dict(df_standard,285)
 pp = pprint.PrettyPrinter(indent=4)
@@ -292,7 +241,7 @@ def batch_response(df, start, end):
         # s = str(row)
         acc_item[one_item['id']] = one_item
     return acc_item
-#########################################################################
+###################################################################################################################
 ptai_dict_some = batch_response(df_standard,1,100)
 #ptai_dict_all = batch_response(df_standard,1,1512)
 
@@ -370,13 +319,14 @@ def recursive_lookup(k, d):
             a = recursive_lookup(k, v)
             if a is not None: return a
     return None
-
+'''
 #GET AVERAGE ONE RECORD POINT
-rec_id = '00025'
-lv = 1
-dict = merged_dict
+rec_id = '00077'
+lv = 3
+option = 'Dataframe'
+'''
 
-def get_item_point(rec_id,lv,merged_dict):
+def get_item_point(rec_id,lv,option):
     a1 = recursive_lookup(rec_id,merged_dict)
     a2 = recursive_lookup('ans_dict',a1)
     a_list = list(a2.keys())
@@ -388,34 +338,120 @@ def get_item_point(rec_id,lv,merged_dict):
         p = recursive_lookup('point',a3)
         l = recursive_lookup('L',a3)
         if s != 'X':
-            if lv <= l :
+            if l <= lv :
                 point_list.append(p)
                 count_list.append(s)
             else:
-                point_list.append(0)
+                pass
         else:
             pass
-    qcount = len(point_list)
-    pcount = sum(map(lambda x : x == 'P', count_list))
-    mcount = sum(map(lambda x : x == 'M', count_list))
-    dcount = sum(map(lambda x : x == 'D', count_list))
+
     point_rec_avg = np.average(point_list)
     point_rec_total = np.sum(point_list)
 
-    d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
-    df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
+    if str(option) == 'point':
+        return point_rec_avg
+    elif str(option) == 'dataframe':
+        qcount = len(point_list)
+        pcount = sum(map(lambda x : x == 'P', count_list))
+        mcount = sum(map(lambda x : x == 'M', count_list))
+        dcount = sum(map(lambda x : x == 'D', count_list))
 
-    return df_rec
+        d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
+        df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
 
-get_item_point('00072',1,merged_dict)['AVG POINT']
+        return df_rec
+    else:
+        return print("Input option for get data")
+
+d = get_item_point('00077',3,'dataframe')
 
 #GET AVERAGE RX Point for Station
 station = station_list[0]
-rgroup = 'R03'
-lv = 1
-dict = merged_dict
+    rgroup = 'R09'
+    lv = 3
+    option = 'point'
 
-a1 = recursive_lookup('station_name',merged_dict)
+
+def get_rx_point(station,rgroup,lv,option):
+    rg = rgroup
+    a_rx_list = [] # collect all rec_id in Rx
+    a_rx_score = []
+
+    for id in merged_dict:
+       si = merged_dict[id]['attribute']['station_name']
+       ri = merged_dict[id]['attribute']['accessibility_group']
+       if si == station and ri == rg:
+           a_rx_list.append(id)
+       else:
+           pass
+
+    for id in a_rx_list:
+        d = get_item_point(id,lv,'point')
+        a_rx_score.append(d)
+
+
+    point_rx_avg = round(np.average(a_rx_score),2)
+    point_rx_total = np.sum(a_rx_score)
+    print(a_rx_list,a_rx_score)
+    print(point_rx_total,point_rx_avg)
+
+    if option == 'point':
+        return point_rx_avg
+    elif option == 'dataframe':
+        return point_rx_avg
+
+#TEST FUNCTION
+station = station_list[0]
+get_rx_point(station,'R05',3,'point')
+
+#Find IU_point for station
+'''
+station = station_list[0]
+rg = 'R03'
+utype = 'NW'
+lv = 1
+'''
+def get_iu_point(station,rg,utype,lv):
+
+    a_rq_list = [] # collect all rec_id in Rx
+    a_rq_score = []
+
+    for id in merged_dict:
+       si = merged_dict[id]['attribute']['station_name']
+       ri = merged_dict[id]['attribute']['accessibility_group']
+       if si == station and ri == rg:
+           a_rq_list.append(id)
+       else:
+           pass
+
+    for id in a_rx_list:
+        ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
+        for ans_id in ans_list:
+
+            u_score = merged_dict[id]['attribute']['ans_dict'][ans_id]['score']
+            u_point = merged_dict[id]['attribute']['ans_dict'][ans_id]['point']
+            u_id = merged_dict[id]['attribute']['ans_dict'][ans_id]['U']
+            l = merged_dict[id]['attribute']['ans_dict'][ans_id]['L']
+
+            if u_id == utype and u_score != 'X' and l <= lv:
+                a_rq_list.append(u_score)
+                a_rq_score.append(u_point)
+                print(ans_id,u_score,u_point,u_id,l)
+
+            else:
+                pass
+
+    if len(a_rq_score) == 0:
+        print("There is no this type of access need")
+    else:
+        iu_point = round(np.average(a_rq_score),2)
+        print("iu_point : " + str(iu_point))
+        return iu_point
+
+get_iu_point(station,'R03','NW',2)
+
+
 
 
 ##_EXPORT to JSON
