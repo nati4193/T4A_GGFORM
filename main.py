@@ -649,7 +649,45 @@ def check_stationlist():
 #TEST >>
 check_stationlist()
 
-#Calculate IFI (Improvement Feasibility Index) for a station
+###FUNCTION >> Calculate IFI (Improvement Feasibility Index) for a station
+
+def get_ifi(station,lv):
+
+    id_list = []
+    is_list = []
+    u_list = []
+    u_score = []
+
+    for id in merged_dict:
+        si = merged_dict[id]['attribute']['station_name']
+        if si == station:
+            id_list.append(id)
+        else:
+            pass
+
+    for id in id_list:
+        ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
+        for ans_id in ans_list:
+            is_value = merged_dict[id]['attribute']['ans_dict'][ans_id]['IS']
+            l = merged_dict[id]['attribute']['ans_dict'][ans_id]['L']
+            if l <= lv:
+                is_list.append(is_value)
+            else:
+                pass
+        is_total = len(is_list)
+        is_low = is_list.count(1.0)
+        is_med = is_list.count(2.0)
+        is_high = is_list.count(3.0)
+
+    IS_point = (((0.9*is_low*100)/is_total) + ((0.5*is_med*100)/is_total) + ((0.1*is_high*100)/is_total))
+    IFI = np.round((IS_point-50)/10,2)
+
+    print('IFI Index for station : {} = {}'.format(station,IFI))
+
+    return IFI
+
+
+
 
 
 
