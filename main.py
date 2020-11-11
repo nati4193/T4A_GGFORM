@@ -585,17 +585,28 @@ def get_up_table(station,lv,option):
 #TEST FUNCTION
 get_up_table(station,1,'dataframe')
 
-#TEST ALL STATION
+#FUNCTION GET ALL STATION SCORE TABLE
+def get_scoresummary_allstation(lv,option):
 
     df_oap_all = pd.DataFrame()
     df_oup_all = pd.DataFrame()
 
     for stn in station_list:
-        df_oap = get_af_table(stn,1,'dataframe')
-        df_oup = get_up_table(stn,1,'dataframe')
+        df_oap = get_af_table(stn,lv,'dataframe')
+        df_oup = get_up_table(stn,lv,'dataframe')
 
         df_oap_all = df_oap_all.append(df_oap,ignore_index=True)
         df_oup_all = df_oup_all.append(df_oup,ignore_index=True)
+    if option == 'oap':
+        return df_oap_all
+    elif option == 'oup':
+        return df_oup_all
+    else:
+        print("Please check input argument")
+
+#def get_overall_station(station,lv,option):
+station = station_list[0]
+    oap = get_af_table(station,lv,'point')
 
 
 
