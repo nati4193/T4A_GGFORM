@@ -377,35 +377,41 @@ def get_item_point(rec_id,lv,option):
     else:
         return print("Input option for get data")
 
-#FUNCTION >> GET AVERAGE RX Point for Station
-def get_rx_point(station,rgroup,lv,option):
+#FUNCTION >> GET AI Point for Station
+station = station_list[0]
+rgroup = 'R03'
+lv = 1
+def get_ai_station(station, rgroup, lv, option):
     rg = rgroup
-    a_rx_list = [] # collect all rec_id in Rx
-    a_rx_score = []
+    ai_id_list = [] # collect all rec_id in Rx
+    ai_point_list = []
 
     for id in merged_dict:
        si = merged_dict[id]['attribute']['station_name']
        ri = merged_dict[id]['attribute']['accessibility_group']
        if si == station and ri == rg:
-           a_rx_list.append(id)
+           ai_id_list.append(id)
        else:
            pass
 
-    for id in a_rx_list:
+    for id in ai_id_list:
         d = get_item_point(id,lv,'point')
-        a_rx_score.append(d)
+        ai_point_list.append(d)
 
+    ai_avg = round(np.average(ai_point_list),2)
+    ai_total = np.sum(ai_point_list)
 
-    point_rx_avg = round(np.average(a_rx_score),2)
-    point_rx_total = np.sum(a_rx_score)
-    print(a_rx_list,a_rx_score)
-    print(point_rx_total,point_rx_avg)
-    point_rx_list = [station,rgroup,point_rx_avg]
+    ai_info_list = [station,rgroup,ai_avg]
+
+    print(ai_id_list, ai_point_list)
+    print(ai_total, ai_avg)
 
     if option == 'point':
-        return point_rx_avg
+        return ai_avg
     elif option == 'list':
-        return point_rx_list
+        return ai_info_list
+
+
 
 ### FUNCTION >> Find IU_point for station each R_Group
 def get_iu_point(station,rg,utype,lv):
@@ -531,7 +537,7 @@ get_irx_point(station,'R03',1)
 
 ### FUNCTION >> GET Overall point (OAP) for each R-Group in a station
 def get_oap(station,rg,lv,option):
-    oa = get_rx_point(station,rg,lv,'point')
+    oa = get_ai_station(station, rg, lv, 'point')
     oi = get_irx_point(station,rg,lv)
     overall = (oa + oi)/2
     print(station,rg,lv,overall)
@@ -545,26 +551,39 @@ def get_oap(station,rg,lv,option):
 #TEST FUNCTION
 get_oap(station,'R01',1,'point')
 get_oap(station,'R01',1,'list')
-get_rx_point(station,'R01',1,'list')
+get_ai_station(station, 'R01', 1, 'list')
 
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
+station =station_list[1]
+lv = 1
+
 def get_af_table(station,lv,option):
     rg_set = get_rgform_set(df_standard)
     af_df = pd.DataFrame(columns=['station','rg','af_point'])
     for rg in rg_set:
         af_list = []
-        af = get_rx_point(station,rg,lv,'list')
+        af = get_ai_station(station, rg, lv, 'list')
         af_df.loc[len(af_df)] = af
 
     oap_list = af_df['af_point'].dropna().astype(int).tolist()
-    oap = np.average(oap_list)
+    oap = int(np.average(oap_list))
+    oapx = (oap - 50)/10
+    oap_med = np.median(oap_list)
+    oap_std = np.std(oap_list)
+    oap_msx = (oap_med - oap_std - 50)/10
+
+    ai_score = (oapx + oap_msx)*0.5
+    if ai_score < 0: ai_score = 0
 
     if option == 'dataframe':
         return af_df
     elif option == 'point':
         return oap
+    elif option == 'AI':
+        return ai_score
 
 get_af_table(station,1,'point')
+get_af_table(station,1,'AI')
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
 def get_up_table(station,lv,option):
@@ -577,15 +596,28 @@ def get_up_table(station,lv,option):
         an_df.loc[len(an_df)] = an_list
 
     oup_list = an_df['an_point'].dropna().astype(int).tolist()
-    oup = np.average(oup_list)
+
+    oup = int(np.average(oup_list))
+
+    oupx = (oup - 50) / 10
+    oup_med = np.median(oup_list)
+    oup_std = np.std(oup_list)
+    oup_msx = (oup_med - oup_std - 50) / 10
+
+    ii_score = (oupx + oup_msx) * 0.5
+    if ii_score < 0: ii_score = 0
+
 
     if option == 'dataframe':
         return an_df
     elif option == 'point':
         return  oup
+    elif option == 'II':
+        return ii_score
 
 #TEST FUNCTION
 get_up_table(station,1,'dataframe')
+get_up_table(station,1,'II')
 
 #FUNCTION GET ALL STATION SCORE TABLE
 def get_scoresummary_allstation(lv,option):
@@ -649,6 +681,9 @@ def check_stationlist():
 #TEST >>
 check_stationlist()
 
+#FUNCTION >> Get Location data
+
+
 ###FUNCTION >> Calculate IFI (Improvement Feasibility Index) for a station
 
 def get_ifi(station,lv):
@@ -685,6 +720,33 @@ def get_ifi(station,lv):
     print('IFI Index for station : {} = {}'.format(station,IFI))
 
     return IFI
+
+### Calculate PTAI score
+station = station_list[0]
+lv = 1
+
+#def get_ptai_all():
+    for station in station_list:
+        df_ptai = pd.DataFrame(columns=['Station Name','Lat','Lon','PTAI','AI','II','IFI','OVERALL','OA','OI'])
+
+        ai = int(get_af_table(station,lv,'AI'))
+        ii = int(get_up_table(station,lv,'II'))
+        ifi = get_ifi(station,lv)
+        ptai = (ai + ii)*0.5
+
+        oa = get_overall_station(station,lv,'oap')
+        oi = get_overall_station(station,lv,'oup')
+        overall = get_overall_station(station,lv,'op')
+        s = df_stn_db[df_stn_db['stn_name_th'].str.contains(station)]
+        s_lat = str(s.iloc[0,16])
+        s_lon = str(s.iloc[0,17])
+        row = [station,s_lat,s_lon,ptai,ai,ii,ifi,overall,oa,oi]
+        print(row)
+
+        # df_ptai.loc[len(df_ptai)] = row
+
+
+        return df_ptai
 
 
 
