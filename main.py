@@ -4,6 +4,8 @@
 import pandas as pd
 import json
 import numpy as np
+import difflib
+
 
 print("Pandas version", pd.__version__)
 
@@ -604,9 +606,45 @@ def get_scoresummary_allstation(lv,option):
     else:
         print("Please check input argument")
 
-#def get_overall_station(station,lv,option):
-station = station_list[0]
+#TEST FUNCTION
+get_scoresummary_allstation(1,'oap')
+oup_df = get_scoresummary_allstation(1,'oup')
+
+def get_overall_station(station,lv,option):
     oap = get_af_table(station,lv,'point')
+    oup = get_up_table(station,lv,'point')
+    op = (oap + oup)/2
+
+    if option == 'oap':
+        print('Result : {},{},OAP Output = {}'.format(station,lv,oap))
+        return oap
+    elif option == 'oup':
+        print('Result : {},{},OUP Output = {}'.format(station,lv,oup))
+        return oup
+    elif option == 'op':
+        print('Result : {},{},OVERALL Output = {}'.format(station,lv,op))
+        return op
+    else:
+        print('Check argument')
+
+oa = get_overall_station(station,2,'oap')
+op = get_overall_station(station,2,'oup')
+overall = get_overall_station(station,2,'op')
+
+print(oa,op,overall)
+
+#check station location
+stn_db_list = df_stn_db['stn_name_th'].tolist()
+for station in station_list:
+    stn_similar = difflib.get_close_matches(station,stn_db_list)
+    #print('Find station : {} = Station : {}'.format(station,stn_similar))
+    #print(stn_similar[0])
+    if station != stn_similar[0]:
+        print(station)
+    else:
+        pass
+
+
 
 
 
