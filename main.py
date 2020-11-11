@@ -7,6 +7,7 @@ import numpy as np
 import difflib
 
 
+
 print("Pandas version", pd.__version__)
 
 ###FUNCTION :: Import Question Database
@@ -358,8 +359,10 @@ def get_item_point(rec_id,lv,option):
                 pass
         else:
             pass
-
-    point_rec_avg = np.average(point_list)
+    if len(point_list) > 0:
+        point_rec_avg = np.mean(point_list)
+    else:
+        point_rec_avg = 0
     point_rec_total = np.sum(point_list)
 
     if str(option) == 'point':
@@ -377,10 +380,8 @@ def get_item_point(rec_id,lv,option):
     else:
         return print("Input option for get data")
 
+
 #FUNCTION >> GET AI Point for Station
-station = station_list[0]
-rgroup = 'R03'
-lv = 1
 def get_ai_station(station, rgroup, lv, option):
     rg = rgroup
     ai_id_list = [] # collect all rec_id in Rx
@@ -398,13 +399,16 @@ def get_ai_station(station, rgroup, lv, option):
         d = get_item_point(id,lv,'point')
         ai_point_list.append(d)
 
-    ai_avg = round(np.average(ai_point_list),2)
+    if len(ai_point_list) > 0:
+        ai_avg = np.mean(ai_point_list)
+    else:
+        ai_avg = 0
     ai_total = np.sum(ai_point_list)
 
     ai_info_list = [station,rgroup,ai_avg]
 
-    print(ai_id_list, ai_point_list)
-    print(ai_total, ai_avg)
+    #print(ai_id_list, ai_point_list)
+    #print(ai_total, ai_avg)
 
     if option == 'point':
         return ai_avg
@@ -438,17 +442,17 @@ def get_iu_point(station,rg,utype,lv):
 
             if u_id == utype and u_score != 'X' and l <= lv:
                 a_rq_score.append(u_point)
-                print(ans_id,u_score,u_point,u_id,l)
+                #print(ans_id,u_score,u_point,u_id,l)
 
             else:
                 pass
 
     if len(a_rq_score) == 0:
-        print("There is no this type of access need")
+        #print("There is no this type of access need")
         iu_point = None
     else:
         iu_point = round(np.average(a_rq_score),2)
-        print("iu_point : " + str(iu_point))
+        #print("iu_point : " + str(iu_point))
 
     return iu_point
 
@@ -478,17 +482,17 @@ def get_up_point(station,utype,lv):
 
             if u_id == utype and u_score != 'X' and l <= lv:
                 a_rq_score.append(u_point)
-                print(ans_id,u_score,u_point,u_id,l)
+                #print(ans_id,u_score,u_point,u_id,l)
 
             else:
                 pass
 
     if len(a_rq_score) == 0:
-        print("There is no this type of access need")
+        #print("There is no this type of access need")
         up_point = None
     else:
         up_point = round(np.average(a_rq_score),2)
-        print("iu_point : " + str(up_point))
+        #print("iu_point : " + str(up_point))
 
     return up_point
 
@@ -554,8 +558,11 @@ get_oap(station,'R01',1,'list')
 get_ai_station(station, 'R01', 1, 'list')
 
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
-station =station_list[1]
+station =station_list[5]
+#for station in station_list:
 lv = 1
+
+station = station_list[12]
 
 def get_af_table(station,lv,option):
     rg_set = get_rgform_set(df_standard)
@@ -566,14 +573,22 @@ def get_af_table(station,lv,option):
         af_df.loc[len(af_df)] = af
 
     oap_list = af_df['af_point'].dropna().astype(int).tolist()
-    oap = int(np.average(oap_list))
-    oapx = (oap - 50)/10
-    oap_med = np.median(oap_list)
-    oap_std = np.std(oap_list)
-    oap_msx = (oap_med - oap_std - 50)/10
+    if len(oap_list) > 1:
+        oap = np.mean(oap_list)
+        oapx = (oap - 50) / 10
+        oap_med = np.median(oap_list)
+        oap_std = np.std(oap_list)
+        oap_msx = (oap_med - oap_std - 50) / 10
+    else:
+        oap = 0
+        oapx = 0
+        oap_med = 0
+        oap_std = 0
+        oap_msx = 0
 
     ai_score = (oapx + oap_msx)*0.5
-    if ai_score < 0: ai_score = 0
+    if ai_score < 0:
+        ai_score = 0
 
     if option == 'dataframe':
         return af_df
@@ -586,6 +601,7 @@ get_af_table(station,1,'point')
 get_af_table(station,1,'AI')
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
+station = station_list[12]
 def get_up_table(station,lv,option):
     utype_set = get_utype_set()
     an_df = pd.DataFrame(columns=['station','U type','an_point'])
@@ -596,16 +612,15 @@ def get_up_table(station,lv,option):
         an_df.loc[len(an_df)] = an_list
 
     oup_list = an_df['an_point'].dropna().astype(int).tolist()
-
-    oup = int(np.average(oup_list))
-
+    oup = int(np.mean(oup_list))
     oupx = (oup - 50) / 10
     oup_med = np.median(oup_list)
     oup_std = np.std(oup_list)
     oup_msx = (oup_med - oup_std - 50) / 10
 
     ii_score = (oupx + oup_msx) * 0.5
-    if ii_score < 0: ii_score = 0
+    if ii_score < 0:
+        ii_score = 0
 
 
     if option == 'dataframe':
@@ -618,6 +633,8 @@ def get_up_table(station,lv,option):
 #TEST FUNCTION
 get_up_table(station,1,'dataframe')
 get_up_table(station,1,'II')
+get_up_table(station,1,'point')
+
 
 #FUNCTION GET ALL STATION SCORE TABLE
 def get_scoresummary_allstation(lv,option):
@@ -648,13 +665,13 @@ def get_overall_station(station,lv,option):
     op = (oap + oup)/2
 
     if option == 'oap':
-        print('Result : {},{},OAP Output = {}'.format(station,lv,oap))
+       # print('Result : {},{},OAP Output = {}'.format(station,lv,oap))
         return oap
     elif option == 'oup':
-        print('Result : {},{},OUP Output = {}'.format(station,lv,oup))
+        #print('Result : {},{},OUP Output = {}'.format(station,lv,oup))
         return oup
     elif option == 'op':
-        print('Result : {},{},OVERALL Output = {}'.format(station,lv,op))
+        #print('Result : {},{},OVERALL Output = {}'.format(station,lv,op))
         return op
     else:
         print('Check argument')
@@ -722,12 +739,11 @@ def get_ifi(station,lv):
     return IFI
 
 ### Calculate PTAI score
-station = station_list[0]
-lv = 1
 
-#def get_ptai_all():
+def get_ptai_all(lv):
+    df_ptai = pd.DataFrame(columns=['Station Name', 'Lat', 'Lon', 'PTAI', 'AI', 'II', 'IFI', 'OVERALL', 'OA', 'OI'])
+
     for station in station_list:
-        df_ptai = pd.DataFrame(columns=['Station Name','Lat','Lon','PTAI','AI','II','IFI','OVERALL','OA','OI'])
 
         ai = int(get_af_table(station,lv,'AI'))
         ii = int(get_up_table(station,lv,'II'))
@@ -737,19 +753,21 @@ lv = 1
         oa = get_overall_station(station,lv,'oap')
         oi = get_overall_station(station,lv,'oup')
         overall = get_overall_station(station,lv,'op')
-        s = df_stn_db[df_stn_db['stn_name_th'].str.contains(station)]
+        s = df_stn_db[[station in x for x in df_stn_db['stn_name_th']]]
         s_lat = str(s.iloc[0,16])
         s_lon = str(s.iloc[0,17])
         row = [station,s_lat,s_lon,ptai,ai,ii,ifi,overall,oa,oi]
-        print(row)
 
-        # df_ptai.loc[len(df_ptai)] = row
+        df_ptai.loc[len(df_ptai.index)] = row
+    return df_ptai
 
+df_export = get_ptai_all(1)
 
-        return df_ptai
+# default CSV
+def df2csv(df,name):
+    df.to_csv('output/{}.csv'.format(name), index = False)
 
-
-
+df2csv(df_export,'ptai_plot')
 
 
 
