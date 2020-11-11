@@ -633,16 +633,24 @@ overall = get_overall_station(station,2,'op')
 
 print(oa,op,overall)
 
-#check station location
-stn_db_list = df_stn_db['stn_name_th'].tolist()
-for station in station_list:
-    stn_similar = difflib.get_close_matches(station,stn_db_list)
-    #print('Find station : {} = Station : {}'.format(station,stn_similar))
-    #print(stn_similar[0])
-    if station != stn_similar[0]:
-        print(station)
-    else:
-        pass
+#FUNCTION >>> check station location
+def check_stationlist():
+    stn_db_list = df_stn_db['stn_name_th'].tolist()
+    for station in station_list:
+        stn_similar = difflib.get_close_matches(station,stn_db_list)
+        #print('Find station : {} = Station : {}'.format(station,stn_similar))
+        #print(stn_similar[0])
+        if station != stn_similar[0]:
+            print('Station missing form station database : {}'.format(station))
+        else:
+            pass
+    print("All station matched completed")
+
+#TEST >>
+check_stationlist()
+
+#Calculate IFI (Improvement Feasibility Index) for a station
+
 
 
 
