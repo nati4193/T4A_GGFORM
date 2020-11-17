@@ -6,8 +6,6 @@ import json
 import numpy as np
 import difflib
 
-
-
 print("Pandas version", pd.__version__)
 
 ###FUNCTION :: Import Question Database
@@ -76,9 +74,13 @@ def get_station_db(path):
     return df_stn
 ###################################################################################################################
 #Set up score table
-score_db = pd.DataFrame(data=[100, 100, 100, 55,60,70,0,20,30],
-                        columns=['point'],
-                        index=['4P','2P','1P','4M','2M','1M','4D','2D','1D'])
+def score_setting():
+    score_db = pd.DataFrame(data=[100, 100, 100, 55,60,70,0,20,30],
+                            columns=['point'],
+                            index=['4P','2P','1P','4M','2M','1M','4D','2D','1D'])
+    return score_db
+
+score_db = score_setting()
 
 ###################################################################################################################
 df_stn_db = get_station_db(path_station)
@@ -117,19 +119,18 @@ def transform_header(df):  ###Transform_header dataframe to English format
 #Transform dataframe
 df_standard = transform_header(df_form)
 
+
+# FUNCTION :: Get R-ID set form response dataFrame
 def get_rgform_set(df):
     rg_set = sorted(set(list(df['r_id'])))
     return rg_set
 
+# FUNCTION :: Get U-type set form response dataFrame ('NW','AA','TA',...)
 def get_utype_set(df=df_question_db):
     utype_set = sorted(set(list(df['U'])))
     return utype_set
 
-
-
-###FUNCTION :: Get one response following index_num with answer detail
-#df = df_standard
-#index_num = 1126
+###FUNCTION :: Get one response as DataFrame following index_num with answer detail
 def get_df_response(df,index_num):
     r_group = df.loc[index_num, 'r_id']                             # Get r_id group for selecting column
     all_ans = df.loc[index_num, df.columns.str.contains(r_group)]  # Get R-response following R-Group by selected column
@@ -179,8 +180,7 @@ def get_df_response(df,index_num):
     return df_item
 
 ###################################################################################################################
-#df = df_standard
-#index_num = 100
+# FUNCTION :: Create one response as dictionary format
 def create_ptai_dict(df,index_num):
     row = index_num
 
@@ -197,10 +197,10 @@ def create_ptai_dict(df,index_num):
     df_ans = get_df_response(df,row)
 
     # TRANSFORM DATAFRAME TO ANSWER DICT
-    ans_dict = {}
-    ans_name = []
-    question_id = []
-    score = []
+    ans_dict = {}       #For store all answers of one response
+    ans_name = []       #For assign each answer in format : RxxQxx-XXXXX
+    question_id = []    #For store question id as RxxQxx
+    score = []          #For store score as 'P','M','D','X'
     ans_label = []
     ans_detail = []
     for row in range(len(df_ans)):
@@ -236,6 +236,7 @@ def create_ptai_dict(df,index_num):
         }
     return acc_item
 
+
 ###################################################################################################################
 
 ###FUNCTION :: Get batch responses following index_num range
@@ -247,6 +248,7 @@ def batch_response(df, start, end):
         # s = str(row)
         acc_item[one_item['id']] = one_item
     return acc_item
+
 ###################################################################################################################
 ptai_dict_some = batch_response(df_standard,1,1512)
 #ptai_dict_all = batch_response(df_standard,1,1512)
@@ -752,7 +754,7 @@ def get_ptai_all(lv):
 
         oa = get_overall_station(station,lv,'oap')
         oi = get_overall_station(station,lv,'oup')
-        overall = get_overall_station(station,lv,'op')
+        overall = round(get_overall_station(station,lv,'op'),2)
         s = df_stn_db[[station in x for x in df_stn_db['stn_name_th']]]
         s_lat = str(s.iloc[0,16])
         s_lon = str(s.iloc[0,17])
@@ -767,7 +769,7 @@ df_export = get_ptai_all(1)
 def df2csv(df,name):
     df.to_csv('output/{}.csv'.format(name), index = False)
 
-df2csv(df_export,'ptai_plot')
+df2csv(df_export,'ptai_plot2')
 
 
 
