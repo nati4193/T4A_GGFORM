@@ -8,6 +8,13 @@ import difflib
 
 print("Pandas version", pd.__version__)
 
+
+
+def convert(o):
+    if isinstance(o, np.int64): return int(o)
+    raise TypeError
+
+
 ###FUNCTION :: Import Question Database
 def get_ptai_question(path):
     df_question = pd.read_csv(
@@ -30,6 +37,7 @@ def get_response(url):
 # Import response data
 form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
 df_form = get_response(form_url)
+len(df_form)
 
 ###FUNCTION :: Import Question form Google Form for recheck
 def get_formquestion(df):
@@ -82,7 +90,15 @@ def score_setting():
 
 score_db = score_setting()
 
-###################################################################################################################
+# FUNCTION :: Get R-ID set form response dataFrame
+def get_rgform_set(df):
+    rg_set = sorted(set(list(df['r_id'])))
+    return rg_set
+
+# FUNCTION :: Get U-type set form response dataFrame ('NW','AA','TA',...)
+def get_utype_set(df=df_question_db):
+    utype_set = sorted(set(list(df['U'])))
+    return utype_set
 df_stn_db = get_station_db(path_station)
 
 # FUNCTION :: Transform google form's header response to standard pattern
@@ -117,18 +133,11 @@ def transform_header(df):  ###Transform_header dataframe to English format
     return df
 ###################################################################################################################
 #Transform dataframe
-df_standard = transform_header(df_form)
+df_transformed = transform_header(df_form)
+
+###################################################################################################################
 
 
-# FUNCTION :: Get R-ID set form response dataFrame
-def get_rgform_set(df):
-    rg_set = sorted(set(list(df['r_id'])))
-    return rg_set
-
-# FUNCTION :: Get U-type set form response dataFrame ('NW','AA','TA',...)
-def get_utype_set(df=df_question_db):
-    utype_set = sorted(set(list(df['U'])))
-    return utype_set
 
 ###FUNCTION :: Get one response as DataFrame following index_num with answer detail
 def get_df_response(df,index_num):
@@ -250,14 +259,13 @@ def batch_response(df, start, end):
     return acc_item
 
 ###################################################################################################################
-ptai_dict_some = batch_response(df_standard,1,1512)
+
+ptai_dict_some = batch_response(df_transformed, 1, len(df_form))
 #ptai_dict_all = batch_response(df_standard,1,1512)
 
 ### FUNCTION MERGE QUESTION and SCORE DATABASE TO DICT
-df = df_question_db
-sc = score_db
 
-def merge_score(ptai_dict,df):
+def merge_score(ptai_dict,df=df_question_db,sc=score_db):
     for id in ptai_dict:
         ans_list = list(ptai_dict[id]['attribute']['ans_dict'].keys())
         #Assign answer criteria to dict
@@ -290,13 +298,27 @@ def merge_score(ptai_dict,df):
 #TEST FUNCTION
 merged_dict = merge_score(ptai_dict_some,df_question_db)
 
+
+
+
 ##_EXPORT Database to JSON
 def export2json(dict,filename):
     with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
-        json.dump(dict,f, ensure_ascii=False, indent=4)
+        json.dump(dict,f, ensure_ascii=False, indent=4,default=convert)
 
 #export2json(ptai_dict_some,"dictsome3")
 export2json(merged_dict,"PTAI_DB")
+
+######################################################################################################\
+
+#IMPORT PTAI_DB.json
+with open('output/PTAI_DB.json') as json_file:
+    merged_dict = json.load(json_file)
+
+    # Print the type of data variable
+    print("Imported PTAI_DB.json as Type:", type(merged_dict))
+
+
 
 #########################################################################
 ### FUNCTION GROUPING AS STATION
@@ -309,6 +331,15 @@ def get_stationform_set(ptai_dict):
 
 station_list = get_stationform_set(merged_dict)
 len(station_list)
+
+#FUNCTION DICT DB TO CSV DATAFRAME
+dict = merged_dict
+
+
+
+
+
+
 
 ###############################################################################################
 '''
@@ -341,14 +372,21 @@ lv = 3
 option = 'Dataframe'
 '''
 
-#FUNCTION >> Get Ri Point for each R-Group in a Station
-def get_item_point(rec_id,lv,option):
+
+#FUNCTION >> Get Ri Point for each R-Group in a Station (Average score for one response) >>> get_ai_station
+rec_id = '00002'
+lv = 2
+demo_df2 = pd.DataFrame(columns=['item', 'point_list', 'count_list'])
+
+for id in merged_dict:
+    rec_id = id
+    #def get_item_point(rec_id,lv,option):
     a1 = recursive_lookup(rec_id,merged_dict)
     a2 = recursive_lookup('ans_dict',a1)
-    a_list = list(a2.keys())
+    a_list = list(a2.keys())    #Get all answer in one response
     point_list = []
     count_list = []
-    for item in a_list:
+    for item in a_list:         #Looping item in answer-id list (ans_dict)
         a3 = recursive_lookup(item,a2)
         s = recursive_lookup('score',a3)
         p = recursive_lookup('point',a3)
@@ -359,13 +397,19 @@ def get_item_point(rec_id,lv,option):
                 count_list.append(s)
             else:
                 pass
-        else:
-            pass
+
+        #print('{},{},{}'.format(item,point_list,count_list))
+        row = [item,point_list,count_list]
+        demo_df2.loc[len(demo_df2.index)] = row
+
+
     if len(point_list) > 0:
         point_rec_avg = np.mean(point_list)
     else:
         point_rec_avg = 0
     point_rec_total = np.sum(point_list)
+
+
 
     if str(option) == 'point':
         return point_rec_avg
@@ -383,17 +427,17 @@ def get_item_point(rec_id,lv,option):
         return print("Input option for get data")
 
 
-#FUNCTION >> GET AI Point for Station
+#FUNCTION >> GET AI Point for Station (Average score for many responses in one group)
 def get_ai_station(station, rgroup, lv, option):
     rg = rgroup
     ai_id_list = [] # collect all rec_id in Rx
-    ai_point_list = []
-
+    ai_point_list = []  # store score from each answer as list
+    #Loop each item in dict
     for id in merged_dict:
        si = merged_dict[id]['attribute']['station_name']
        ri = merged_dict[id]['attribute']['accessibility_group']
        if si == station and ri == rg:
-           ai_id_list.append(id)
+           ai_id_list.append(id) #Get rec_id list by selecting station name and R Group
        else:
            pass
 
@@ -416,8 +460,6 @@ def get_ai_station(station, rgroup, lv, option):
         return ai_avg
     elif option == 'list':
         return ai_info_list
-
-
 
 ### FUNCTION >> Find IU_point for station each R_Group
 def get_iu_point(station,rg,utype,lv):
@@ -567,7 +609,7 @@ lv = 1
 station = station_list[12]
 
 def get_af_table(station,lv,option):
-    rg_set = get_rgform_set(df_standard)
+    rg_set = get_rgform_set(df_transformed)
     af_df = pd.DataFrame(columns=['station','rg','af_point'])
     for rg in rg_set:
         af_list = []
@@ -743,7 +785,7 @@ def get_ifi(station,lv):
 ### Calculate PTAI score
 
 def get_ptai_all(lv):
-    df_ptai = pd.DataFrame(columns=['Station Name', 'Lat', 'Lon', 'PTAI', 'AI', 'II', 'IFI', 'OVERALL', 'OA', 'OI'])
+    df_ptai = pd.DataFrame(columns=['Station Name', 'Lat', 'Lon','Coordinate', 'PTAI', 'AI', 'II', 'IFI', 'OVERALL', 'OA', 'OI'])
 
     for station in station_list:
 
@@ -758,7 +800,8 @@ def get_ptai_all(lv):
         s = df_stn_db[[station in x for x in df_stn_db['stn_name_th']]]
         s_lat = str(s.iloc[0,16])
         s_lon = str(s.iloc[0,17])
-        row = [station,s_lat,s_lon,ptai,ai,ii,ifi,overall,oa,oi]
+        s_coordinate = ('{},{}'.format(s_lat,s_lon))
+        row = [station,s_lat,s_lon,s_coordinate,ptai,ai,ii,ifi,overall,oa,oi]
 
         df_ptai.loc[len(df_ptai.index)] = row
     return df_ptai
@@ -769,7 +812,7 @@ df_export = get_ptai_all(1)
 def df2csv(df,name):
     df.to_csv('output/{}.csv'.format(name), index = False)
 
-df2csv(df_export,'ptai_plot2')
+df2csv(df_export,'ptai_plot3')
 
 
 
