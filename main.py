@@ -333,7 +333,7 @@ station_list = get_stationform_set(merged_dict)
 len(station_list)
 
 #FUNCTION DICT DB TO CSV DATAFRAME
-dict = merged_dict
+merged_dict
 
 
 
@@ -374,57 +374,58 @@ option = 'Dataframe'
 
 
 #FUNCTION >> Get Ri Point for each R-Group in a Station (Average score for one response) >>> get_ai_station
+
 rec_id = '00002'
-lv = 2
-demo_df2 = pd.DataFrame(columns=['item', 'point_list', 'count_list'])
+    lv = 2
+    demo_df2 = pd.DataFrame(columns=['item', 'point_list', 'count_list', 'average', 'total', 'answer_count'])
 
-for id in merged_dict:
-    rec_id = id
-    #def get_item_point(rec_id,lv,option):
-    a1 = recursive_lookup(rec_id,merged_dict)
-    a2 = recursive_lookup('ans_dict',a1)
-    a_list = list(a2.keys())    #Get all answer in one response
-    point_list = []
-    count_list = []
-    for item in a_list:         #Looping item in answer-id list (ans_dict)
-        a3 = recursive_lookup(item,a2)
-        s = recursive_lookup('score',a3)
-        p = recursive_lookup('point',a3)
-        l = recursive_lookup('L',a3)
-        if s != 'X':
-            if l <= lv :
-                point_list.append(p)
-                count_list.append(s)
-            else:
-                pass
+    for id in merged_dict:
+        rec_id = id
 
-        #print('{},{},{}'.format(item,point_list,count_list))
-        row = [item,point_list,count_list]
+        # def get_item_point(rec_id,lv,option):
+        a1 = recursive_lookup(rec_id, merged_dict)
+        a2 = recursive_lookup('ans_dict', a1)
+        a_list = list(a2.keys())  # Get all answer in one response
+        point_list = []
+        count_list = []
+        for item in a_list:  # Looping item in answer-id list (ans_dict)
+            a3 = recursive_lookup(item, a2)
+            s = recursive_lookup('score', a3)
+            p = recursive_lookup('point', a3)
+            l = recursive_lookup('L', a3)
+            if s != 'X' and "U" != 'SK':
+                if l <= lv:
+                    point_list.append(p)
+                    count_list.append(s)
+                else:
+                    pass
+
+            # print('{},{},{}'.format(item,point_list,count_list))
+        if len(point_list) > 0:
+            point_rec_avg = np.mean(point_list)
+        else:
+            point_rec_avg = 0
+
+        point_rec_total = np.sum(point_list)
+        point_count = len(count_list)
+
+        row = [item, point_list, count_list, point_rec_avg, point_rec_total, point_count]
         demo_df2.loc[len(demo_df2.index)] = row
 
+        if str(option) == 'point':
+            return point_rec_avg
+        elif str(option) == 'dataframe':
+            qcount = len(point_list)
+            pcount = sum(map(lambda x : x == 'P', count_list))
+            mcount = sum(map(lambda x : x == 'M', count_list))
+            dcount = sum(map(lambda x : x == 'D', count_list))
 
-    if len(point_list) > 0:
-        point_rec_avg = np.mean(point_list)
-    else:
-        point_rec_avg = 0
-    point_rec_total = np.sum(point_list)
+            d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
+            df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
 
-
-
-    if str(option) == 'point':
-        return point_rec_avg
-    elif str(option) == 'dataframe':
-        qcount = len(point_list)
-        pcount = sum(map(lambda x : x == 'P', count_list))
-        mcount = sum(map(lambda x : x == 'M', count_list))
-        dcount = sum(map(lambda x : x == 'D', count_list))
-
-        d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
-        df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
-
-        return df_rec
-    else:
-        return print("Input option for get data")
+            return df_rec
+        else:
+            return print("Input option for get data")
 
 
 #FUNCTION >> GET AI Point for Station (Average score for many responses in one group)
