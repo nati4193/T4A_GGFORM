@@ -134,10 +134,52 @@ def transform_header(df):  ###Transform_header dataframe to English format
 ###################################################################################################################
 #Transform dataframe
 df_transformed = transform_header(df_form)
+'''
+###################################################################################################################
+#Upload image to cloud storage
+from gcloud import storage
+from oauth2client.service_account import ServiceAccountCredentials
+import os
+
+credentials_dict = {
+    'type': 'service_account',
+    'client_id': os.environ['BACKUP_CLIENT_ID'],
+    'client_email': os.environ['BACKUP_CLIENT_EMAIL'],
+    'private_key_id': os.environ['BACKUP_PRIVATE_KEY_ID'],
+    'private_key': os.environ['BACKUP_PRIVATE_KEY'],
+}
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+    credentials_dict
+)
+client = storage.Client(credentials=credentials, project='myproject')
+bucket = client.get_bucket('mybucket')
+blob = bucket.blob('myfile')
+blob.upload_from_filename('myfile')
 
 ###################################################################################################################
+#Download image to cloud storage
+
+from google.cloud import storage
 
 
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+    # bucket_name = "your-bucket-name"
+    # source_blob_name = "storage-object-name"
+    # destination_file_name = "local/path/to/file"
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+
+    print(
+        "Blob {} downloaded to {}.".format(
+            source_blob_name, destination_file_name
+        )
+    )
+'''
 
 ###FUNCTION :: Get one response as DataFrame following index_num with answer detail
 def get_df_response(df,index_num):
@@ -298,9 +340,6 @@ def merge_score(ptai_dict,df=df_question_db,sc=score_db):
 #TEST FUNCTION
 merged_dict = merge_score(ptai_dict_some,df_question_db)
 
-
-
-
 ##_EXPORT Database to JSON
 def export2json(dict,filename):
     with open(f'output/{filename}.json', 'w', encoding='utf-8') as f:
@@ -335,12 +374,6 @@ len(station_list)
 #FUNCTION DICT DB TO CSV DATAFRAME
 merged_dict
 
-
-
-
-
-
-
 ###############################################################################################
 '''
 Query data form dict
@@ -374,61 +407,62 @@ option = 'Dataframe'
 
 
 #FUNCTION >> Get Ri Point for each R-Group in a Station (Average score for one response) >>> get_ai_station
+def get_item_point(rec_id,lv,option):
+    a1 = recursive_lookup(rec_id, merged_dict)
+    a2 = recursive_lookup('ans_dict', a1)
+    a_list = list(a2.keys())  # Get all answer in one response
+    point_list = []
+    count_list = []
+    for item in a_list:  # Looping item in answer-id list (ans_dict)
+        a3 = recursive_lookup(item, a2)
+        s = recursive_lookup('score', a3)
+        p = recursive_lookup('point', a3)
+        l = recursive_lookup('L', a3)
+        if s != 'X' and "U" != 'SK':
+            if l <= lv:
+                point_list.append(p)
+                count_list.append(s)
+            else:
+                pass
 
-rec_id = '00002'
-    lv = 2
-    demo_df2 = pd.DataFrame(columns=['item', 'point_list', 'count_list', 'average', 'total', 'answer_count'])
+        # print('{},{},{}'.format(item,point_list,count_list))
+    if len(point_list) > 0:
+        point_rec_avg = np.mean(point_list)
+    else:
+        point_rec_avg = 0
 
-    for id in merged_dict:
-        rec_id = id
+    point_rec_total = np.sum(point_list)
+    point_count = len(count_list)
 
-        # def get_item_point(rec_id,lv,option):
-        a1 = recursive_lookup(rec_id, merged_dict)
-        a2 = recursive_lookup('ans_dict', a1)
-        a_list = list(a2.keys())  # Get all answer in one response
-        point_list = []
-        count_list = []
-        for item in a_list:  # Looping item in answer-id list (ans_dict)
-            a3 = recursive_lookup(item, a2)
-            s = recursive_lookup('score', a3)
-            p = recursive_lookup('point', a3)
-            l = recursive_lookup('L', a3)
-            if s != 'X' and "U" != 'SK':
-                if l <= lv:
-                    point_list.append(p)
-                    count_list.append(s)
-                else:
-                    pass
+    #demo_df2 = pd.DataFrame(columns=['item', 'point_list', 'count_list', 'average', 'total', 'answer_count'])
+    #row = [item, point_list, count_list, point_rec_avg, point_rec_total, point_count]
+    #demo_df2.loc[len(demo_df2.index)] = row
 
-            # print('{},{},{}'.format(item,point_list,count_list))
-        if len(point_list) > 0:
-            point_rec_avg = np.mean(point_list)
-        else:
-            point_rec_avg = 0
+    if str(option) == 'point':
+        return point_rec_avg
+    elif str(option) == 'dataframe':
+        qcount = len(point_list)
+        pcount = sum(map(lambda x : x == 'P', count_list))
+        mcount = sum(map(lambda x : x == 'M', count_list))
+        dcount = sum(map(lambda x : x == 'D', count_list))
 
-        point_rec_total = np.sum(point_list)
-        point_count = len(count_list)
+        d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
+        df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
 
-        row = [item, point_list, count_list, point_rec_avg, point_rec_total, point_count]
-        demo_df2.loc[len(demo_df2.index)] = row
+        return df_rec
+    else:
+        return print("Input option for get data")
 
-        if str(option) == 'point':
-            return point_rec_avg
-        elif str(option) == 'dataframe':
-            qcount = len(point_list)
-            pcount = sum(map(lambda x : x == 'P', count_list))
-            mcount = sum(map(lambda x : x == 'M', count_list))
-            dcount = sum(map(lambda x : x == 'D', count_list))
+#TEST GET ID FUNCTION
+'''
+for id in merged_dict:
+    rec_id = id
+    print(get_item_point(rec_id,1,"dataframe"))
+'''
 
-            d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
-            df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
+#FUNCTION >> GET AI Point for Station (Average score for many responses in one group) <<
+#Refer : get_item_point(rec_id,lv,option) , merged_dict
 
-            return df_rec
-        else:
-            return print("Input option for get data")
-
-
-#FUNCTION >> GET AI Point for Station (Average score for many responses in one group)
 def get_ai_station(station, rgroup, lv, option):
     rg = rgroup
     ai_id_list = [] # collect all rec_id in Rx
@@ -447,22 +481,35 @@ def get_ai_station(station, rgroup, lv, option):
         ai_point_list.append(d)
 
     if len(ai_point_list) > 0:
-        ai_avg = np.mean(ai_point_list)
+        ai_avg = round(np.mean(ai_point_list),2)
     else:
-        ai_avg = 0
+        ai_avg = None
+
+    ai_item_count = len(ai_point_list)
     ai_total = np.sum(ai_point_list)
-
-    ai_info_list = [station,rgroup,ai_avg]
-
-    #print(ai_id_list, ai_point_list)
-    #print(ai_total, ai_avg)
+    ai_info_list = [station,rgroup,ai_avg,ai_item_count]
 
     if option == 'point':
         return ai_avg
     elif option == 'list':
         return ai_info_list
 
+#TEST : get_ai_station
+station = 'ท่าอากาศยานกระบี่'
+rgroup = 'R05'
+lv = 1
+option = 'point'
+
+print(get_ai_station(station,rgroup,lv,option))
+
 ### FUNCTION >> Find IU_point for station each R_Group
+'''TEST FUNCTION
+station = 'สถานีรถไฟชุมพร'
+rg = 'R03'
+lv = 1
+option = 'point'
+utype = 'NW'
+'''
 def get_iu_point(station,rg,utype,lv):
 
     a_rq_list = [] # collect all rec_id in Rx
@@ -479,7 +526,6 @@ def get_iu_point(station,rg,utype,lv):
     for id in a_rq_list:
         ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
         for ans_id in ans_list:
-
             u_score = merged_dict[id]['attribute']['ans_dict'][ans_id]['score']
             u_point = merged_dict[id]['attribute']['ans_dict'][ans_id]['point']
             u_id = merged_dict[id]['attribute']['ans_dict'][ans_id]['U']
@@ -487,8 +533,6 @@ def get_iu_point(station,rg,utype,lv):
 
             if u_id == utype and u_score != 'X' and l <= lv:
                 a_rq_score.append(u_point)
-                #print(ans_id,u_score,u_point,u_id,l)
-
             else:
                 pass
 
@@ -501,8 +545,7 @@ def get_iu_point(station,rg,utype,lv):
 
     return iu_point
 
-### FUNCTION >> Find IU_point for a Station group bu User Access Need
-
+### FUNCTION >> Find IU_point for a Station group by User Access Need
 def get_up_point(station,utype,lv):
     a_rq_list = []
     a_rq_score = []
@@ -519,7 +562,6 @@ def get_up_point(station,utype,lv):
     for id in a_rq_list:
         ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
         for ans_id in ans_list:
-
             u_score = merged_dict[id]['attribute']['ans_dict'][ans_id]['score']
             u_point = merged_dict[id]['attribute']['ans_dict'][ans_id]['point']
             u_id = merged_dict[id]['attribute']['ans_dict'][ans_id]['U']
@@ -528,18 +570,22 @@ def get_up_point(station,utype,lv):
             if u_id == utype and u_score != 'X' and l <= lv:
                 a_rq_score.append(u_point)
                 #print(ans_id,u_score,u_point,u_id,l)
-
             else:
                 pass
 
     if len(a_rq_score) == 0:
         #print("There is no this type of access need")
-        up_point = None
+        up_point = 0
     else:
         up_point = round(np.average(a_rq_score),2)
         #print("iu_point : " + str(up_point))
 
     return up_point
+
+station = 'สถานีรถไฟชุมพร'
+lv = 1
+utype = 'NW'
+get_up_point(station,utype,lv)
 
 # >>>>> ASSIGN STATION <<<<<
 station = station_list[10]
@@ -577,12 +623,12 @@ def get_irx_point(station,rg,lv):
     else:
         i_rx_point = 0
     count = len(i_point_list)
-    print(i_rx_point,i_rx_total,count)
+    print(station,i_rx_point,i_rx_total,count)
 
     return i_rx_point
 
 #TEST FUNCTION
-get_irx_point(station,'R03',1)
+get_irx_point(station,'R03',3)
 
 ### FUNCTION >> GET Overall point (OAP) for each R-Group in a station
 def get_oap(station,rg,lv,option):
@@ -596,34 +642,27 @@ def get_oap(station,rg,lv,option):
     elif option == 'list':
         return overall_list
 
-
 #TEST FUNCTION
 get_oap(station,'R01',1,'point')
 get_oap(station,'R01',1,'list')
 get_ai_station(station, 'R01', 1, 'list')
 
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
-station =station_list[5]
-#for station in station_list:
-lv = 1
-
-station = station_list[12]
-
 def get_af_table(station,lv,option):
     rg_set = get_rgform_set(df_transformed)
-    af_df = pd.DataFrame(columns=['station','rg','af_point'])
+    af_df = pd.DataFrame(columns=['station','rg','af_point','Count'])
     for rg in rg_set:
         af_list = []
-        af = get_ai_station(station, rg, lv, 'list')
+        af = get_ai_station(station,rg, lv, 'list')
         af_df.loc[len(af_df)] = af
 
     oap_list = af_df['af_point'].dropna().astype(int).tolist()
     if len(oap_list) > 1:
         oap = np.mean(oap_list)
-        oapx = (oap - 50) / 10
+        oapx = (oap/100)*5
         oap_med = np.median(oap_list)
         oap_std = np.std(oap_list)
-        oap_msx = (oap_med - oap_std - 50) / 10
+        oap_msx = (oap_med - oap_std)/100 * 5
     else:
         oap = 0
         oapx = 0
@@ -631,9 +670,12 @@ def get_af_table(station,lv,option):
         oap_std = 0
         oap_msx = 0
 
-    ai_score = (oapx + oap_msx)*0.5
+    ai_score =round(((oapx + oap_msx)*0.5),2)
+
     if ai_score < 0:
         ai_score = 0
+    else:
+        ai_score = ai_score
 
     if option == 'dataframe':
         return af_df
@@ -644,9 +686,9 @@ def get_af_table(station,lv,option):
 
 get_af_table(station,1,'point')
 get_af_table(station,1,'AI')
+get_af_table(station,1,'dataframe')
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
-station = station_list[12]
 def get_up_table(station,lv,option):
     utype_set = get_utype_set()
     an_df = pd.DataFrame(columns=['station','U type','an_point'])
@@ -658,15 +700,16 @@ def get_up_table(station,lv,option):
 
     oup_list = an_df['an_point'].dropna().astype(int).tolist()
     oup = int(np.mean(oup_list))
-    oupx = (oup - 50) / 10
+    oupx = (oup/100)*5
     oup_med = np.median(oup_list)
     oup_std = np.std(oup_list)
-    oup_msx = (oup_med - oup_std - 50) / 10
+    oup_msx = (oup_med - oup_std)/100 * 5
 
-    ii_score = (oupx + oup_msx) * 0.5
+    ii_score = round((oupx + oup_msx) * 0.5,2)
     if ii_score < 0:
         ii_score = 0
-
+    else:
+        ii_score = ii_score
 
     if option == 'dataframe':
         return an_df
@@ -699,10 +742,6 @@ def get_scoresummary_allstation(lv,option):
         return df_oup_all
     else:
         print("Please check input argument")
-
-#TEST FUNCTION
-get_scoresummary_allstation(1,'oap')
-oup_df = get_scoresummary_allstation(1,'oup')
 
 def get_overall_station(station,lv,option):
     oap = get_af_table(station,lv,'point')
@@ -743,11 +782,7 @@ def check_stationlist():
 #TEST >>
 check_stationlist()
 
-#FUNCTION >> Get Location data
-
-
 ###FUNCTION >> Calculate IFI (Improvement Feasibility Index) for a station
-
 def get_ifi(station,lv):
 
     id_list = []
@@ -779,41 +814,86 @@ def get_ifi(station,lv):
     IS_point = (((0.9*is_low*100)/is_total) + ((0.5*is_med*100)/is_total) + ((0.1*is_high*100)/is_total))
     IFI = np.round((IS_point-50)/10,2)
 
-    print('IFI Index for station : {} = {}'.format(station,IFI))
+    #print('IFI Index for station : {} = {}'.format(station,IFI))
 
     return IFI
 
 ### Calculate PTAI score
+def get_ptai_all():
+    df_ptai = pd.DataFrame(columns=[
+        'Station Name',
+        'Station Type',
+        'Province',
+        'Lat',
+        'Lon',
+        'Coordinate',
+        'PTAI',
+        'AI',
+        'II',
+        'IFI',
+        'OVERALL',
+        'OA',
+        'OI',
+        'Level'
+    ])
 
-def get_ptai_all(lv):
-    df_ptai = pd.DataFrame(columns=['Station Name', 'Lat', 'Lon','Coordinate', 'PTAI', 'AI', 'II', 'IFI', 'OVERALL', 'OA', 'OI'])
+    for lv in range (1,4,1):
+        for station in station_list:
+            ai = get_af_table(station,lv,'AI')
+            ii = get_up_table(station,lv,'II')
+            ifi = get_ifi(station,lv)
+            ptai = round((ai + ii)*0.5,1)
 
-    for station in station_list:
+            oa = get_overall_station(station,lv,'oap')
+            oi = get_overall_station(station,lv,'oup')
+            overall = round(get_overall_station(station,lv,'op'),2)
+            s = df_stn_db[[station in x for x in df_stn_db['stn_name_th']]]
+            s_lat = str(s.iloc[0,16])
+            s_lon = str(s.iloc[0,17])
+            s_coordinate = ('{},{}'.format(s_lat,s_lon))
+            level = lv
+            province = str(s.iloc[0,8])
+            station_type = str(s.iloc[0,6])
+            count_item_checked =
+            count_facilities_checked
+            count_area_checked
+            count_item_P
+            count_item_M
+            count_item_D
+            count_item_is1
+            count_item_is2
+            count_item_is3
+            count_item_x4
+            count_item_x2
+            count_item_x1
 
-        ai = int(get_af_table(station,lv,'AI'))
-        ii = int(get_up_table(station,lv,'II'))
-        ifi = get_ifi(station,lv)
-        ptai = (ai + ii)*0.5
 
-        oa = get_overall_station(station,lv,'oap')
-        oi = get_overall_station(station,lv,'oup')
-        overall = round(get_overall_station(station,lv,'op'),2)
-        s = df_stn_db[[station in x for x in df_stn_db['stn_name_th']]]
-        s_lat = str(s.iloc[0,16])
-        s_lon = str(s.iloc[0,17])
-        s_coordinate = ('{},{}'.format(s_lat,s_lon))
-        row = [station,s_lat,s_lon,s_coordinate,ptai,ai,ii,ifi,overall,oa,oi]
+            row = [
+                station,
+                station_type,
+                province,
+                s_lat,
+                s_lon,
+                s_coordinate,
+                ptai,
+                ai,
+                ii,
+                ifi,
+                overall,
+                oa,
+                oi,
+                level
+            ]
 
-        df_ptai.loc[len(df_ptai.index)] = row
+            df_ptai.loc[len(df_ptai.index)] = row
     return df_ptai
 
-df_export = get_ptai_all(1)
+df_export = get_ptai_all()
 
 # default CSV
 def df2csv(df,name):
     df.to_csv('output/{}.csv'.format(name), index = False)
-
-df2csv(df_export,'ptai_plot3')
+df2csv(df_export,'ptai_overall')
 
 
 
