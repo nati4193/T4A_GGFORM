@@ -36,6 +36,7 @@ def get_response(url):
 ###################################################################################################################
 # Import response data
 form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
+form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
 df_form = get_response(form_url)
 len(df_form)
 
@@ -372,7 +373,6 @@ station_list = get_stationform_set(merged_dict)
 len(station_list)
 
 #FUNCTION DICT DB TO CSV DATAFRAME
-merged_dict
 
 ###############################################################################################
 '''
@@ -398,13 +398,22 @@ def recursive_lookup(k, d):
             a = recursive_lookup(k, v)
             if a is not None: return a
     return None
-'''
-#GET AVERAGE ONE RECORD POINT
-rec_id = '00077'
-lv = 3
-option = 'Dataframe'
-'''
 
+#FUNCTION >>> check station location
+def check_stationlist():
+    stn_db_list = df_stn_db['stn_name_th'].tolist()
+    for station in station_list:
+        stn_similar = difflib.get_close_matches(station,stn_db_list)
+        #print('Find station : {} = Station : {}'.format(station,stn_similar))
+        #print(stn_similar[0])
+        if station != stn_similar[0]:
+            print('Station missing form station database : {}'.format(station))
+        else:
+            pass
+    print("All station matched completed")
+
+#TEST >>
+check_stationlist()
 
 #FUNCTION >> Get Ri Point for each R-Group in a Station (Average score for one response) >>> get_ai_station
 def get_item_point(rec_id,lv,option):
@@ -434,10 +443,6 @@ def get_item_point(rec_id,lv,option):
     point_rec_total = np.sum(point_list)
     point_count = len(count_list)
 
-    #demo_df2 = pd.DataFrame(columns=['item', 'point_list', 'count_list', 'average', 'total', 'answer_count'])
-    #row = [item, point_list, count_list, point_rec_avg, point_rec_total, point_count]
-    #demo_df2.loc[len(demo_df2.index)] = row
-
     if str(option) == 'point':
         return point_rec_avg
     elif str(option) == 'dataframe':
@@ -453,15 +458,11 @@ def get_item_point(rec_id,lv,option):
     else:
         return print("Input option for get data")
 
-#TEST GET ID FUNCTION
-'''
-for id in merged_dict:
-    rec_id = id
-    print(get_item_point(rec_id,1,"dataframe"))
-'''
-
-#FUNCTION >> GET AI Point for Station (Average score for many responses in one group) <<
-#Refer : get_item_point(rec_id,lv,option) , merged_dict
+#FUNCTION >> GET AI Point for Station (Average score for many responses in one group)
+# #Refer : get_item_point(rec_id,lv,option) , merged_dict
+station = station_list[0]
+rgroup = 'R03'
+lv = 1
 
 def get_ai_station(station, rgroup, lv, option):
     rg = rgroup
@@ -476,8 +477,13 @@ def get_ai_station(station, rgroup, lv, option):
        else:
            pass
 
+    df_ai = pd.DataFrame(columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
     for id in ai_id_list:
         d = get_item_point(id,lv,'point')
+        df_oneitem = get_item_point(id,lv,'dataframe')
+        row = df_oneitem.values.flatten().tolist()
+
+        df_ai.loc[len(df_ai.index)] = row
         ai_point_list.append(d)
 
     if len(ai_point_list) > 0:
@@ -485,31 +491,27 @@ def get_ai_station(station, rgroup, lv, option):
     else:
         ai_avg = None
 
+    ai_ans_count = df_ai['Q count'].sum()
+    ai_ans_countP =  df_ai['P count'].sum()
+    ai_ans_countM =  df_ai['M Count'].sum()
+    ai_ans_countD =  df_ai['D Count'].sum()
     ai_item_count = len(ai_point_list)
     ai_total = np.sum(ai_point_list)
-    ai_info_list = [station,rgroup,ai_avg,ai_item_count]
+    ai_info_list = [station,rgroup,ai_avg,ai_item_count,ai_ans_count,ai_ans_countP,ai_ans_countM,ai_ans_countD]
 
     if option == 'point':
         return ai_avg
     elif option == 'list':
         return ai_info_list
+    elif option == 'dataframe':
+        return  df_ai
 
-#TEST : get_ai_station
-station = 'ท่าอากาศยานกระบี่'
-rgroup = 'R05'
-lv = 1
-option = 'point'
+#TEST
+t2 = get_ai_station(station_list[0],'R03',1,'dataframe')
+t3 = get_ai_station(station_list[0],'R03',1,'list')
 
-print(get_ai_station(station,rgroup,lv,option))
 
 ### FUNCTION >> Find IU_point for station each R_Group
-'''TEST FUNCTION
-station = 'สถานีรถไฟชุมพร'
-rg = 'R03'
-lv = 1
-option = 'point'
-utype = 'NW'
-'''
 def get_iu_point(station,rg,utype,lv):
 
     a_rq_list = [] # collect all rec_id in Rx
@@ -582,15 +584,6 @@ def get_up_point(station,utype,lv):
 
     return up_point
 
-station = 'สถานีรถไฟชุมพร'
-lv = 1
-utype = 'NW'
-get_up_point(station,utype,lv)
-
-# >>>>> ASSIGN STATION <<<<<
-station = station_list[10]
-
-
 ### FUNCTION >> Find I-point for station each R_Group
 def get_irx_point(station,rg,lv):
     u_list = []
@@ -627,9 +620,6 @@ def get_irx_point(station,rg,lv):
 
     return i_rx_point
 
-#TEST FUNCTION
-get_irx_point(station,'R03',3)
-
 ### FUNCTION >> GET Overall point (OAP) for each R-Group in a station
 def get_oap(station,rg,lv,option):
     oa = get_ai_station(station, rg, lv, 'point')
@@ -642,18 +632,13 @@ def get_oap(station,rg,lv,option):
     elif option == 'list':
         return overall_list
 
-#TEST FUNCTION
-get_oap(station,'R01',1,'point')
-get_oap(station,'R01',1,'list')
-get_ai_station(station, 'R01', 1, 'list')
-
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
 def get_af_table(station,lv,option):
     rg_set = get_rgform_set(df_transformed)
-    af_df = pd.DataFrame(columns=['station','rg','af_point','Count'])
+    af_df = pd.DataFrame(columns=['station','rg','af_point','Q_Count'])
     for rg in rg_set:
         af_list = []
-        af = get_ai_station(station,rg, lv, 'list')
+        af = get_ai_station(station,rg, lv,'list')
         af_df.loc[len(af_df)] = af
 
     oap_list = af_df['af_point'].dropna().astype(int).tolist()
@@ -683,10 +668,6 @@ def get_af_table(station,lv,option):
         return oap
     elif option == 'AI':
         return ai_score
-
-get_af_table(station,1,'point')
-get_af_table(station,1,'AI')
-get_af_table(station,1,'dataframe')
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
 def get_up_table(station,lv,option):
@@ -718,12 +699,6 @@ def get_up_table(station,lv,option):
     elif option == 'II':
         return ii_score
 
-#TEST FUNCTION
-get_up_table(station,1,'dataframe')
-get_up_table(station,1,'II')
-get_up_table(station,1,'point')
-
-
 #FUNCTION GET ALL STATION SCORE TABLE
 def get_scoresummary_allstation(lv,option):
 
@@ -742,6 +717,9 @@ def get_scoresummary_allstation(lv,option):
         return df_oup_all
     else:
         print("Please check input argument")
+#TEST
+t1 = get_scoresummary_allstation(1,'oap')
+
 
 def get_overall_station(station,lv,option):
     oap = get_af_table(station,lv,'point')
@@ -759,28 +737,6 @@ def get_overall_station(station,lv,option):
         return op
     else:
         print('Check argument')
-
-oa = get_overall_station(station,2,'oap')
-op = get_overall_station(station,2,'oup')
-overall = get_overall_station(station,2,'op')
-
-print(oa,op,overall)
-
-#FUNCTION >>> check station location
-def check_stationlist():
-    stn_db_list = df_stn_db['stn_name_th'].tolist()
-    for station in station_list:
-        stn_similar = difflib.get_close_matches(station,stn_db_list)
-        #print('Find station : {} = Station : {}'.format(station,stn_similar))
-        #print(stn_similar[0])
-        if station != stn_similar[0]:
-            print('Station missing form station database : {}'.format(station))
-        else:
-            pass
-    print("All station matched completed")
-
-#TEST >>
-check_stationlist()
 
 ###FUNCTION >> Calculate IFI (Improvement Feasibility Index) for a station
 def get_ifi(station,lv):
@@ -836,8 +792,9 @@ def get_ptai_all():
         'OI',
         'Level'
     ])
-
+    #Looping all level
     for lv in range (1,4,1):
+        #Looping all station
         for station in station_list:
             ai = get_af_table(station,lv,'AI')
             ii = get_up_table(station,lv,'II')
@@ -847,15 +804,17 @@ def get_ptai_all():
             oa = get_overall_station(station,lv,'oap')
             oi = get_overall_station(station,lv,'oup')
             overall = round(get_overall_station(station,lv,'op'),2)
+
             s = df_stn_db[[station in x for x in df_stn_db['stn_name_th']]]
             s_lat = str(s.iloc[0,16])
             s_lon = str(s.iloc[0,17])
             s_coordinate = ('{},{}'.format(s_lat,s_lon))
-            level = lv
             province = str(s.iloc[0,8])
             station_type = str(s.iloc[0,6])
+
+            level = lv
             count_item_checked =
-            count_facilities_checked
+            count_facilities_checked =
             count_area_checked
             count_item_P
             count_item_M
