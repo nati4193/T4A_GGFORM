@@ -8,8 +8,6 @@ import difflib
 
 print("Pandas version", pd.__version__)
 
-
-
 def convert(o):
     if isinstance(o, np.int64): return int(o)
     raise TypeError
@@ -422,15 +420,21 @@ def get_item_point(rec_id,lv,option):
     a_list = list(a2.keys())  # Get all answer in one response
     point_list = []
     count_list = []
+    countIS = []
+    countX = []
     for item in a_list:  # Looping item in answer-id list (ans_dict)
         a3 = recursive_lookup(item, a2)
         s = recursive_lookup('score', a3)
         p = recursive_lookup('point', a3)
+        IS = recursive_lookup('IS', a3)
+        X = recursive_lookup('X', a3)
         l = recursive_lookup('L', a3)
         if s != 'X' and "U" != 'SK':
             if l <= lv:
                 point_list.append(p)
                 count_list.append(s)
+                countIS.append(IS)
+                countX.append(X)
             else:
                 pass
 
@@ -450,19 +454,35 @@ def get_item_point(rec_id,lv,option):
         pcount = sum(map(lambda x : x == 'P', count_list))
         mcount = sum(map(lambda x : x == 'M', count_list))
         dcount = sum(map(lambda x : x == 'D', count_list))
+        IS3_count = sum(map(lambda x : x == 3,countIS))
+        IS2_count = sum(map(lambda x : x == 2,countIS))
+        IS1_count = sum(map(lambda x : x == 1,countIS))
+        X4_count = sum(map(lambda x : x == 4,countX))
+        X2_count = sum(map(lambda x : x == 2,countX))
+        X1_count = sum(map(lambda x : x == 1,countX))
 
-        d = [(rec_id,point_rec_total,point_rec_avg,lv,qcount,pcount,mcount,dcount)]
-        df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
+        d = [(rec_id,point_rec_total,point_rec_avg,lv,
+              qcount,pcount,mcount,dcount,
+              IS1_count,IS2_count,IS3_count,
+              X1_count,X2_count,X4_count)]
+        df_rec = pd.DataFrame(d,columns=['REC_ID','Total point','AVG POINT','Lv.',
+                                         'Q count','P count','M Count','D Count',
+                                         'IS1','IS2','IS3','X4','X2','X1'])
 
         return df_rec
     else:
         return print("Input option for get data")
 
+rec_id = '00534'
+lv = 1
+t7 = get_item_point(rec_id,lv,'dataframe')
+
+
 #FUNCTION >> GET AI Point for Station (Average score for many responses in one group)
 # #Refer : get_item_point(rec_id,lv,option) , merged_dict
 station = station_list[0]
-rgroup = 'R03'
 lv = 1
+rgroup = 'R03'
 
 def get_ai_station(station, rgroup, lv, option):
     rg = rgroup
@@ -477,7 +497,9 @@ def get_ai_station(station, rgroup, lv, option):
        else:
            pass
 
-    df_ai = pd.DataFrame(columns=['REC_ID','Total point','AVG POINT','Lv.','Q count','P count','M Count','D Count'])
+    df_ai = pd.DataFrame(columns=['REC_ID','Total point','AVG POINT','Lv.',
+                                  'Q count','P count','M Count','D Count',
+                                  'IS1','IS2','IS3','X4','X2','X1'])
     for id in ai_id_list:
         d = get_item_point(id,lv,'point')
         df_oneitem = get_item_point(id,lv,'dataframe')
@@ -495,10 +517,20 @@ def get_ai_station(station, rgroup, lv, option):
     ai_ans_countP =  df_ai['P count'].sum()
     ai_ans_countM =  df_ai['M Count'].sum()
     ai_ans_countD =  df_ai['D Count'].sum()
+    ai_ans_countIS1 =  df_ai['IS1'].sum()
+    ai_ans_countIS2 =  df_ai['IS2'].sum()
+    ai_ans_countIS3 =  df_ai['IS3'].sum()
+    ai_ans_countX1 =  df_ai['X1'].sum()
+    ai_ans_countX2 =  df_ai['X2'].sum()
+    ai_ans_countX4 =  df_ai['X4'].sum()
+
     ai_item_count = len(ai_point_list)
     ai_total = np.sum(ai_point_list)
-    ai_info_list = [station,rgroup,ai_avg,ai_item_count,ai_ans_count,ai_ans_countP,ai_ans_countM,ai_ans_countD]
-
+    ai_info_list = [station,rgroup,ai_avg,ai_item_count,
+                    ai_ans_count,ai_ans_countP,ai_ans_countM,ai_ans_countD,
+                    ai_ans_countIS1,ai_ans_countIS2,ai_ans_countIS3,
+                    ai_ans_countX1,ai_ans_countX2,ai_ans_countX4
+                    ]
     if option == 'point':
         return ai_avg
     elif option == 'list':
@@ -506,10 +538,12 @@ def get_ai_station(station, rgroup, lv, option):
     elif option == 'dataframe':
         return  df_ai
 
-#TEST
-t2 = get_ai_station(station_list[0],'R03',1,'dataframe')
-t3 = get_ai_station(station_list[0],'R03',1,'list')
-
+#TEST def get_ai_station(station, rgroup, lv, option):
+station = station_list[0]
+lv = 1
+rgroup = 'R03'
+t8 = get_ai_station(station,rgroup,lv,'list')
+t9 = get_ai_station(station,rgroup,lv,'dataframe')
 
 ### FUNCTION >> Find IU_point for station each R_Group
 def get_iu_point(station,rg,utype,lv):
@@ -635,7 +669,9 @@ def get_oap(station,rg,lv,option):
 ### FUNCTION >> CREATE Accessible Facilities (AF) DataFrame for a station
 def get_af_table(station,lv,option):
     rg_set = get_rgform_set(df_transformed)
-    af_df = pd.DataFrame(columns=['station','rg','af_point','Q_Count'])
+    af_df = pd.DataFrame(columns=['station','rg','af_point',
+                                  'Q_Count','A Count','P count','M count','D count',
+                                  'IS1','IS2','IS3','X1','X2','X4'])
     for rg in rg_set:
         af_list = []
         af = get_ai_station(station,rg, lv,'list')
@@ -668,6 +704,7 @@ def get_af_table(station,lv,option):
         return oap
     elif option == 'AI':
         return ai_score
+#TEST
 
 ### FUNCTION >> CREATE Accessible User need (AU) DataFrame for a station
 def get_up_table(station,lv,option):
@@ -718,7 +755,7 @@ def get_scoresummary_allstation(lv,option):
     else:
         print("Please check input argument")
 #TEST
-t1 = get_scoresummary_allstation(1,'oap')
+t4 = get_scoresummary_allstation(1,'oap')
 
 
 def get_overall_station(station,lv,option):
@@ -790,7 +827,20 @@ def get_ptai_all():
         'OVERALL',
         'OA',
         'OI',
-        'Level'
+        'Level',
+        'All item checked',
+        'Facilites checked',
+        'Area checked',
+        'P items',
+        'M items',
+        'D items',
+        'IS1 items',
+        'IS2 items',
+        'IS3 items',
+        'X1 items',
+        'X2 items',
+        'X4 items',
+
     ])
     #Looping all level
     for lv in range (1,4,1):
@@ -811,20 +861,21 @@ def get_ptai_all():
             s_coordinate = ('{},{}'.format(s_lat,s_lon))
             province = str(s.iloc[0,8])
             station_type = str(s.iloc[0,6])
-
             level = lv
-            count_item_checked =
-            count_facilities_checked =
-            count_area_checked
-            count_item_P
-            count_item_M
-            count_item_D
-            count_item_is1
-            count_item_is2
-            count_item_is3
-            count_item_x4
-            count_item_x2
-            count_item_x1
+
+            df_stat = get_af_table(station,lv,'dataframe')
+            count_item_checked = df_stat['A Count'].sum()
+            count_facilities_checked = np.sum(df_stat['Q_Count']>0)
+            count_area_checked = df_stat['Q_Count'].sum()
+            count_item_P = df_stat['P count'].sum()
+            count_item_M = df_stat['M count'].sum()
+            count_item_D = df_stat['D count'].sum()
+            count_item_is1  = df_stat['IS1'].sum()
+            count_item_is2  = df_stat['IS2'].sum()
+            count_item_is3  = df_stat['IS3'].sum()
+            count_item_x4  = df_stat['X4'].sum()
+            count_item_x2  = df_stat['X2'].sum()
+            count_item_x1  = df_stat['X1'].sum()
 
 
             row = [
@@ -841,18 +892,47 @@ def get_ptai_all():
                 overall,
                 oa,
                 oi,
-                level
-            ]
+                level,
+                count_item_checked,
+                count_facilities_checked,
+                count_area_checked,
+                count_item_P,
+                count_item_M,
+                count_item_D,
+                count_item_is1,
+                count_item_is2,
+                count_item_is3,
+                count_item_x4,
+                count_item_x2,
+                count_item_x1            ]
 
             df_ptai.loc[len(df_ptai.index)] = row
     return df_ptai
 
-df_export = get_ptai_all()
+def get_station_summary(option):
+    for lv in range(1,4,1):
+        df_oap = get_scoresummary_allstation(lv,'oap')
+        df_oap['lv'] = lv
+        df_oup = get_scoresummary_allstation(lv,'oup')
+        df_oup['lv'] = lv
+    if option == 'OAI':
+        return  df_oap
+    elif option == 'OUP':
+        return df_oup
+
+
+df_export_overview = get_ptai_all()
+df_export_oap = get_station_summary('OAI')
+df_export_oup = get_station_summary('OUP')
+
 
 # default CSV
 def df2csv(df,name):
     df.to_csv('output/{}.csv'.format(name), index = False)
-df2csv(df_export,'ptai_overall')
+
+df2csv(df_export_overview, 'ptai_overall')
+df2csv(df_export_oap, 'ptai_overall')
+df2csv(df_export_oup, 'ptai_overall')
 
 
 
