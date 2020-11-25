@@ -755,7 +755,6 @@ def get_scoresummary_allstation(lv,option):
 #TEST
 t4 = get_scoresummary_allstation(1,'oap')
 
-
 def get_overall_station(station,lv,option):
     oap = get_af_table(station,lv,'point')
     oup = get_up_table(station,lv,'point')
@@ -875,7 +874,7 @@ def get_ptai_all():
             count_item_x2  = df_stat['X2'].sum()
             count_item_x1  = df_stat['X1'].sum()
 
-            row = [
+            h1 = [
                 station,
                 station_type,
                 province,
@@ -903,8 +902,33 @@ def get_ptai_all():
                 count_item_x2,
                 count_item_x1            ]
 
-            df_ptai.loc[len(df_ptai.index)] = row
+            df_ptai.loc[len(df_ptai.index)] = h1
     return df_ptai
+
+###
+def get_ptai_report():
+    rg_set = get_rgform_set(df_transformed)
+    utype_set = get_utype_set()
+    h1 = ['station', 'level']
+    h2 = rg_set
+    h3 = utype_set
+    head = h1 + h2 + h3
+    df_report = pd.DataFrame(columns=head)
+    #Looping all level
+    for lv in range (1,4,1):
+        #Looping all station
+        for station in station_list:
+            s = station
+            level = lv
+            af = []
+            ua = []
+            for rg in rg_set:
+                af.append(get_ai_station(station, rg, lv, 'point'))
+            for u in utype_set:
+                ua.append(get_up_point(station,u,lv))
+            row = [s,level] + af + ua
+            df_report.loc[len(df_report.index)] = row
+    return df_report
 
 def get_station_summary(option):
     df_oap = pd.DataFrame(columns=['station','rg','af_point',
@@ -961,14 +985,18 @@ def get_record_db():
                acc_img,acc_time,acc_comment,question_rec_id
                ]
         df_record.loc[len(df_record.index)] = row
-    return get_record_db()
-
+    return df_record
 
 df_export_overview = get_ptai_all()
 df_export_oap = get_station_summary('OAI')
 df_export_oup = get_station_summary('OUP')
 df_export_record = get_record_db()
+df_export_report = get_ptai_report()
 
+df_export_report['key'] = df_export_report["station"] + df_export_report["level"].astype(str)
+df_export_overview['key'] = df_export_overview["Station Name"] + df_export_overview["Level"].astype(str)
+
+df_merge_report = df_export_overview.join(df_export_report.set_index('key'), on='key')
 
 # default CSV
 def df2csv(df,name):
@@ -978,8 +1006,10 @@ df2csv(df_export_overview, 'ptai_overall')
 df2csv(df_export_oap, 'ptai_oap')
 df2csv(df_export_oup, 'ptai_oup')
 df2csv(df_export_record,'ptai_record')
+df2csv(df_export_report,'ptai_report')
 
-
+filename = 'ptai_report.xlsx'
+df_merge_report.to_excel('output/{}'.format(filename))
 
 
 
