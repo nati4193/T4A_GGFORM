@@ -1,4 +1,3 @@
-
 ###################################################################################################################
 #IMPORT Library
 import pandas as pd
@@ -90,7 +89,7 @@ def score_setting():
 score_db = score_setting()
 
 # FUNCTION :: Get R-ID set form response dataFrame
-def get_rgform_set(df):
+def get_rgform_set(df=df_form):
     rg_set = sorted(set(list(df['r_id'])))
     return rg_set
 
@@ -877,7 +876,6 @@ def get_ptai_all():
             count_item_x2  = df_stat['X2'].sum()
             count_item_x1  = df_stat['X1'].sum()
 
-
             row = [
                 station,
                 station_type,
@@ -910,11 +908,25 @@ def get_ptai_all():
     return df_ptai
 
 def get_station_summary(option):
+    df_oap = pd.DataFrame(columns=['station','rg','af_point',
+                                  'Q_Count','A Count','P count','M count','D count',
+                                  'IS1','IS2','IS3','X1','X2','X4','lv'])
+    df_oup = pd.DataFrame(columns=['station','U type','an_point'])
+
     for lv in range(1,4,1):
-        df_oap = get_scoresummary_allstation(lv,'oap')
-        df_oap['lv'] = lv
-        df_oup = get_scoresummary_allstation(lv,'oup')
-        df_oup['lv'] = lv
+        df_name_ap = 'df_ap_lv{}'.format(lv)
+        df_name_ap = pd.DataFrame()
+        df_name_ap = get_scoresummary_allstation(lv,'oap')
+        df_name_ap['lv'] = lv
+        df_oap = df_oap.append(df_name_ap,ignore_index = True)
+
+        df_name_up = 'df_up_lv{}'.format(lv)
+        df_name_up = pd.DataFrame()
+        df_name_up = get_scoresummary_allstation(lv, 'oup')
+        df_name_up['lv'] = lv
+        df_oup = df_oup.append(df_name_up, ignore_index=True)
+
+
     if option == 'OAI':
         return  df_oap
     elif option == 'OUP':
@@ -931,8 +943,8 @@ def df2csv(df,name):
     df.to_csv('output/{}.csv'.format(name), index = False)
 
 df2csv(df_export_overview, 'ptai_overall')
-df2csv(df_export_oap, 'ptai_overall')
-df2csv(df_export_oup, 'ptai_overall')
+df2csv(df_export_oap, 'ptai_oap')
+df2csv(df_export_oup, 'ptai_oup')
 
 
 
