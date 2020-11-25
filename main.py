@@ -33,7 +33,6 @@ def get_response(url):
 ###################################################################################################################
 # Import response data
 form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
-form_url = "https://docs.google.com/spreadsheets/d/1SN2lYQLvXx6H9FjYAtdPCpT_L0SJzcxfCGmgI7kv_ao/edit#gid=283051997"
 df_form = get_response(form_url)
 len(df_form)
 
@@ -932,10 +931,43 @@ def get_station_summary(option):
     elif option == 'OUP':
         return df_oup
 
+def get_record_db():
+    df_record = pd.DataFrame(columns=['Station Name',
+                                      'Record ID',
+                                      'InspectorName',
+                                      'Accessiblity Name',
+                                      'R Group',
+                                      'Accessibility Position',
+                                      'Image',
+                                      'Timestamp',
+                                      'Comment',
+                                      'Question Record ID'
+                                      ])
+    question_rec_id = []
+    for id in merged_dict:
+        station_name = merged_dict[id]['attribute']['station_name']
+        rec_id = id
+        inspector = merged_dict[id]['attribute']['inspector']
+        acc_name = merged_dict[id]['attribute']['accessibility_name']
+        acc_group = merged_dict[id]['attribute']['accessibility_group']
+        acc_location = merged_dict[id]['attribute']['accessibility_location']
+        acc_img = merged_dict[id]['attribute']['image']
+        acc_time = merged_dict[id]['attribute']['timestamp']
+        acc_comment = merged_dict[id]['attribute']['comment']
+        question_rec_id = list(merged_dict[id]['attribute']['ans_dict'].keys())
+
+        row = [station_name,rec_id,inspector,
+               acc_name,acc_group,acc_location,
+               acc_img,acc_time,acc_comment,question_rec_id
+               ]
+        df_record.loc[len(df_record.index)] = row
+    return get_record_db()
+
 
 df_export_overview = get_ptai_all()
 df_export_oap = get_station_summary('OAI')
 df_export_oup = get_station_summary('OUP')
+df_export_record = get_record_db()
 
 
 # default CSV
@@ -945,6 +977,7 @@ def df2csv(df,name):
 df2csv(df_export_overview, 'ptai_overall')
 df2csv(df_export_oap, 'ptai_oap')
 df2csv(df_export_oup, 'ptai_oup')
+df2csv(df_export_record,'ptai_record')
 
 
 
