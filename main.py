@@ -131,6 +131,8 @@ def transform_header(df):  ###Transform_header dataframe to English format
 ###################################################################################################################
 #Transform dataframe
 df_transformed = transform_header(df_form)
+
+print('Complete Preparing Section!')
 '''
 ###################################################################################################################
 #Upload image to cloud storage
@@ -354,6 +356,7 @@ with open('output/PTAI_DB.json') as json_file:
     # Print the type of data variable
     print("Imported PTAI_DB.json as Type:", type(merged_dict))
 
+print('Complete Import Section!')
 
 
 #########################################################################
@@ -985,7 +988,6 @@ def get_record_db():
                                       'Accessibility Position',
                                       'Image',
                                       'Timestamp',
-                                      'Comment',
                                       'Question Record ID'
                                       ])
     question_rec_id = []
@@ -998,7 +1000,6 @@ def get_record_db():
         acc_location = merged_dict[id]['attribute']['accessibility_location']
         acc_img = merged_dict[id]['attribute']['image']
         acc_time = merged_dict[id]['attribute']['timestamp']
-        acc_comment = merged_dict[id]['attribute']['comment']
         question_rec_id = list(merged_dict[id]['attribute']['ans_dict'].keys())
 
         row = [station_name,rec_id,inspector,
@@ -1008,52 +1009,76 @@ def get_record_db():
         df_record.loc[len(df_record.index)] = row
     return df_record
 
-df_export_overview = get_ptai_all()
+print('Complete Calculation Function part!')
+
 df_export_oap = get_station_summary('OAI')
 df_export_oup = get_station_summary('OUP')
 df_export_record = get_record_db()
-df_export_report = get_ptai_report()
 
-df_export_report['key'] = df_export_report["station"] + df_export_report["level"].astype(str)
-df_export_overview['key'] = df_export_overview["Station Name"] + df_export_overview["Level"].astype(str)
-# JOIN TABLE
-df_merge_report = df_export_overview.join(df_export_report.set_index('key'), on='key')
+def get_ptai_excelreport():
+    df_export_overview = get_ptai_all()
+    df_export_report = get_ptai_report()
 
-df_merge_report['PTAI100'] = round((df_merge_report['PTAI'] * 100 / 5),0)
+    df_export_report['key'] = df_export_report["station"] + df_export_report["level"].astype(str)
+    df_export_overview['key'] = df_export_overview["Station Name"] + df_export_overview["Level"].astype(str)
+    # JOIN TABLE
+    df_merge_report = df_export_overview.join(df_export_report.set_index('key'), on='key')
 
-# create a list of our conditions
-conditions = [
-    (df_merge_report['PTAI100'] <= 49),
-    (df_merge_report['PTAI100'] > 49) & (df_merge_report['PTAI100'] <= 54),
-    (df_merge_report['PTAI100'] > 54) & (df_merge_report['PTAI100'] <= 59),
-    (df_merge_report['PTAI100'] > 59) & (df_merge_report['PTAI100'] <= 64),
-    (df_merge_report['PTAI100'] > 64) & (df_merge_report['PTAI100'] <= 69),
-    (df_merge_report['PTAI100'] > 69) & (df_merge_report['PTAI100'] <= 74),
-    (df_merge_report['PTAI100'] > 74) & (df_merge_report['PTAI100'] <= 79),
-    (df_merge_report['PTAI100'] > 79) & (df_merge_report['PTAI100'] <= 84),
-    (df_merge_report['PTAI100'] > 84) & (df_merge_report['PTAI100'] <= 89),
-    (df_merge_report['PTAI100'] > 84) & (df_merge_report['PTAI100'] <= 89),
-    (df_merge_report['PTAI100'] > 89) & (df_merge_report['PTAI100'] <= 94),
-    (df_merge_report['PTAI100'] > 94)
+    df_merge_report['PTAI100'] = df_merge_report['PTAI']*10+50
+    # create a list of our conditions
+    conditions = [
+        (df_merge_report['PTAI100'] <= 49),
+        (df_merge_report['PTAI100'] > 49) & (df_merge_report['PTAI100'] <= 54),
+        (df_merge_report['PTAI100'] > 54) & (df_merge_report['PTAI100'] <= 59),
+        (df_merge_report['PTAI100'] > 59) & (df_merge_report['PTAI100'] <= 64),
+        (df_merge_report['PTAI100'] > 64) & (df_merge_report['PTAI100'] <= 69),
+        (df_merge_report['PTAI100'] > 69) & (df_merge_report['PTAI100'] <= 74),
+        (df_merge_report['PTAI100'] > 74) & (df_merge_report['PTAI100'] <= 79),
+        (df_merge_report['PTAI100'] > 79) & (df_merge_report['PTAI100'] <= 84),
+        (df_merge_report['PTAI100'] > 84) & (df_merge_report['PTAI100'] <= 89),
+        (df_merge_report['PTAI100'] > 84) & (df_merge_report['PTAI100'] <= 89),
+        (df_merge_report['PTAI100'] > 89) & (df_merge_report['PTAI100'] <= 94),
+        (df_merge_report['PTAI100'] > 94)
+        ]
+
+    # create a list of the values we want to assign for each condition
+    values = [
+        'ไม่สามารถใช้งานได้|Unusable',
+        'ใช้งานด้วยตัวเองได้ 0%',
+        'ใช้งานด้วยตัวเองได้ 10%',
+        'ใช้งานด้วยตัวเองได้ 20%',
+        'ใช้งานด้วยตัวเองได้ 30%',
+        'ใช้งานด้วยตัวเองได้ 40%',
+        'ใช้งานด้วยตัวเองได้ 50%',
+        'ใช้งานด้วยตัวเองได้ 60%',
+        'ใช้งานด้วยตัวเองได้ 70%',
+        'ใช้งานด้วยตัวเองได้ 80%',
+        'ใช้งานด้วยตัวเองได้ 90%',
+        'ใช้งานด้วยตัวเองได้ 99%',
     ]
-# create a list of the values we want to assign for each condition
-values = [
-    'ไม่สามารถใช้งานได้|Unusable',
-    'ใช้งานด้วยตัวเองได้ 0%',
-    'ใช้งานด้วยตัวเองได้ 10%',
-    'ใช้งานด้วยตัวเองได้ 20%',
-    'ใช้งานด้วยตัวเองได้ 30%',
-    'ใช้งานด้วยตัวเองได้ 40%',
-    'ใช้งานด้วยตัวเองได้ 50%',
-    'ใช้งานด้วยตัวเองได้ 60%',
-    'ใช้งานด้วยตัวเองได้ 70%',
-    'ใช้งานด้วยตัวเองได้ 80%',
-    'ใช้งานด้วยตัวเองได้ 90%',
-    'ใช้งานด้วยตัวเองได้ 99%',
-]
+    values_rating = [
+        'ยากมาก',
+        'ยาก',
+        'ระวัง',
+        'พอใช้',
+        'พอใช้',
+        'ดี',
+        'ดี',
+        'ดีมาก',
+        'ดีมาก',
+        'ดีเยี่ยม',
+        'ดีเยี่ยม',
+        'มาตรฐาน',
+    ]
 
-# create a new column and use np.select to assign values to it using our lists as arguments
-df_merge_report['tier'] = np.select(conditions, values)
+    # create a new column and use np.select to assign values to it using our lists as arguments
+    df_merge_report['ratings%'] = np.select(conditions, values)
+    df_merge_report['ratings'] = np.select(conditions, values_rating)
+
+    filename = 'ptai_report.xlsx'
+    df_merge_report.to_excel('output/{}'.format(filename))
+
+    return df_merge_report
 
 
 # default CSV
@@ -1066,8 +1091,6 @@ df2csv(df_export_oup, 'ptai_oup')
 df2csv(df_export_record,'ptai_record')
 df2csv(df_export_report,'ptai_report')
 
-filename = 'ptai_report.xlsx'
-df_merge_report.to_excel('output/{}'.format(filename))
 
 
 
