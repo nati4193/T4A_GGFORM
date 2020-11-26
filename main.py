@@ -676,12 +676,23 @@ def get_af_table(station,lv,option):
         af_df.loc[len(af_df)] = af
 
     oap_list = af_df['af_point'].dropna().astype(int).tolist()
+
+    oap = -1
+    oap_msx = -1
+
     if len(oap_list) > 1:
         oap = np.mean(oap_list)
-        oapx = (oap/100)*5
+        if (oap-50)/10 > 0 :
+            oapx = (oap-50)/10
+        else:
+            oapx = 0
         oap_med = np.median(oap_list)
         oap_std = np.std(oap_list)
-        oap_msx = (oap_med - oap_std)/100 * 5
+        if ((oap_med - oap_std) - 50)/10 > 0:
+            oap_msx = ((oap_med - oap_std) - 50)/10
+        else:
+            oap_msx = 0
+
     else:
         oap = 0
         oapx = 0
@@ -714,12 +725,21 @@ def get_up_table(station,lv,option):
         an_list = [station,u,an]
         an_df.loc[len(an_df)] = an_list
 
+    oupx = -1
+    oup_msx = -1
     oup_list = an_df['an_point'].dropna().astype(int).tolist()
-    oup = int(np.mean(oup_list))
-    oupx = (oup/100)*5
+    oup = np.mean(oup_list)
+    if (oup-50)/10 > 0:
+        oupx = (oup-50)/10
+    else:
+        oupx = 0
+
     oup_med = np.median(oup_list)
     oup_std = np.std(oup_list)
-    oup_msx = (oup_med - oup_std)/100 * 5
+    if ((oup_med - oup_std) - 50)/10 > 0:
+        oup_msx = ((oup_med - oup_std) - 50)/10
+    else:
+        oup_msx = 0
 
     ii_score = round((oupx + oup_msx) * 0.5,2)
     if ii_score < 0:
@@ -802,7 +822,7 @@ def get_ifi(station,lv):
         is_high = is_list.count(3.0)
 
     IS_point = (((0.9*is_low*100)/is_total) + ((0.5*is_med*100)/is_total) + ((0.1*is_high*100)/is_total))
-    IFI = np.round((IS_point-50)/10,2)
+    IFI = np.round((IS_point/100)*5,2)
 
     #print('IFI Index for station : {} = {}'.format(station,IFI))
 
@@ -955,6 +975,7 @@ def get_station_summary(option):
     elif option == 'OUP':
         return df_oup
 
+
 def get_record_db():
     df_record = pd.DataFrame(columns=['Station Name',
                                       'Record ID',
@@ -995,8 +1016,45 @@ df_export_report = get_ptai_report()
 
 df_export_report['key'] = df_export_report["station"] + df_export_report["level"].astype(str)
 df_export_overview['key'] = df_export_overview["Station Name"] + df_export_overview["Level"].astype(str)
-
+# JOIN TABLE
 df_merge_report = df_export_overview.join(df_export_report.set_index('key'), on='key')
+
+df_merge_report['PTAI100'] = round((df_merge_report['PTAI'] * 100 / 5),0)
+
+# create a list of our conditions
+conditions = [
+    (df_merge_report['PTAI100'] <= 49),
+    (df_merge_report['PTAI100'] > 49) & (df_merge_report['PTAI100'] <= 54),
+    (df_merge_report['PTAI100'] > 54) & (df_merge_report['PTAI100'] <= 59),
+    (df_merge_report['PTAI100'] > 59) & (df_merge_report['PTAI100'] <= 64),
+    (df_merge_report['PTAI100'] > 64) & (df_merge_report['PTAI100'] <= 69),
+    (df_merge_report['PTAI100'] > 69) & (df_merge_report['PTAI100'] <= 74),
+    (df_merge_report['PTAI100'] > 74) & (df_merge_report['PTAI100'] <= 79),
+    (df_merge_report['PTAI100'] > 79) & (df_merge_report['PTAI100'] <= 84),
+    (df_merge_report['PTAI100'] > 84) & (df_merge_report['PTAI100'] <= 89),
+    (df_merge_report['PTAI100'] > 84) & (df_merge_report['PTAI100'] <= 89),
+    (df_merge_report['PTAI100'] > 89) & (df_merge_report['PTAI100'] <= 94),
+    (df_merge_report['PTAI100'] > 94)
+    ]
+# create a list of the values we want to assign for each condition
+values = [
+    'ไม่สามารถใช้งานได้|Unusable',
+    'ใช้งานด้วยตัวเองได้ 0%',
+    'ใช้งานด้วยตัวเองได้ 10%',
+    'ใช้งานด้วยตัวเองได้ 20%',
+    'ใช้งานด้วยตัวเองได้ 30%',
+    'ใช้งานด้วยตัวเองได้ 40%',
+    'ใช้งานด้วยตัวเองได้ 50%',
+    'ใช้งานด้วยตัวเองได้ 60%',
+    'ใช้งานด้วยตัวเองได้ 70%',
+    'ใช้งานด้วยตัวเองได้ 80%',
+    'ใช้งานด้วยตัวเองได้ 90%',
+    'ใช้งานด้วยตัวเองได้ 99%',
+]
+
+# create a new column and use np.select to assign values to it using our lists as arguments
+df_merge_report['tier'] = np.select(conditions, values)
+
 
 # default CSV
 def df2csv(df,name):
