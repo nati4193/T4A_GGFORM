@@ -6,11 +6,9 @@ import numpy as np
 import difflib
 
 print("Pandas version", pd.__version__)
-
 def convert(o):
     if isinstance(o, np.int64): return int(o)
     raise TypeError
-
 
 ###FUNCTION :: Import Question Database
 def get_ptai_question(path):
@@ -286,7 +284,6 @@ def create_ptai_dict(df,index_num):
         }
     return acc_item
 
-
 ###################################################################################################################
 
 ###FUNCTION :: Get batch responses following index_num range
@@ -346,6 +343,7 @@ def export2json(dict,filename):
 
 #export2json(ptai_dict_some,"dictsome3")
 export2json(merged_dict,"PTAI_DB")
+
 
 ######################################################################################################\
 
@@ -1083,13 +1081,51 @@ def get_ptai_excelreport():
 
 # default CSV
 def df2csv(df,name):
-    df.to_csv('output/{}.csv'.format(name), index = False)
+    df.to_csv('output/{}.csv'.format(name), index = False,line_terminator='\n')
 
 df2csv(df_export_overview, 'ptai_overall')
 df2csv(df_export_oap, 'ptai_oap')
 df2csv(df_export_oup, 'ptai_oup')
 df2csv(df_export_record,'ptai_record')
 df2csv(df_export_report,'ptai_report')
+
+def get_all_answer_dataframe():
+
+    head = []
+    i = next(iter(merged_dict))
+    j = list(merged_dict[i]['attribute']['ans_dict'].keys())[0]
+    h1 = list(merged_dict[i]['attribute'].keys())
+    h1.remove('ans_dict')
+    h2 = list(merged_dict[i]['attribute']['ans_dict'][j].keys())
+    head = h1 + ['rec_id'] + h2 + ['ans_id']
+
+    df_answer = pd.DataFrame(columns = head)
+    row = []
+    for id in merged_dict:
+        row = []
+        row_q = []
+        rec_id = str(id)
+        for kq in h1:
+            row_q.append(str(merged_dict[id]['attribute'][kq]).rstrip("\n"))
+        row_q.append(rec_id)
+
+        ans_list = list(merged_dict[id]['attribute']['ans_dict'].keys())
+
+        for ans_id in ans_list:
+            ans_dict_id = ans_id
+            row_a = []
+            for ka in h2:
+                row_a.append(merged_dict[id]['attribute']['ans_dict'][ans_id][ka])
+            row_a.append(ans_dict_id)
+            row = row_q + row_a
+            df_answer.loc[len(df_answer.index)] = row
+
+    df_answer.replace(to_replace=[r"\\t|\\n|\\r", "\t|\n|\r"], value=["",""], regex=True, inplace=True)
+    return df_answer
+
+    df2csv(df_answer,'ptai_allanswer')
+
+
 
 
 
